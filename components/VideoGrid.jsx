@@ -1,16 +1,14 @@
-'use client';
+"use client";
 
-import VideoCard from './VideoCard';
+import VideoCard from "./VideoCard";
 
-export default function VideoGrid({ videos, onPlay }) {
-  if (!videos?.length) {
-    return <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-10 text-center text-zinc-400">No videos found.</div>;
-  }
+export default function VideoGrid({ videos = [], onSelect }) {
+  if (!videos.length) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="video-grid">
       {videos.map((video, index) => (
-        <VideoCard key={video.id ?? `${video.title}-${index}`} video={video} onPlay={onPlay} />
+        <VideoCard key={video.id || video.video_id || index} video={video} onSelect={onSelect} />
       ))}
     </div>
   );

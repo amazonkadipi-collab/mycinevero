@@ -1,32 +1,22 @@
-'use client';
+"use client";
 
-export default function VideoCard({ video, onPlay }) {
+export default function VideoCard({ video, onSelect }) {
+  const thumbnail = video?.default_thumb?.src || video?.thumbnail || video?.thumb || "";
+  const title = video?.title || "Untitled Video";
+
   return (
-    <article className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-lg transition hover:border-red-700/70 hover:-translate-y-0.5">
-      <button type="button" onClick={() => onPlay(video)} className="block w-full text-left">
-        <div className="relative aspect-video overflow-hidden bg-zinc-900">
-          <img
-            src={video.thumbnail || video.default_thumb?.src}
-            alt={video.title || 'Video'}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            loading="lazy"
-          />
-          {video.length_min != null && (
-            <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs text-white">
-              {video.length_min} min
-            </span>
-          )}
+    <button type="button" className="video-card" onClick={() => onSelect?.(video)}>
+      <div className="video-thumb">
+        {thumbnail ? <img src={thumbnail} alt={title} loading="lazy" /> : <span>No Image</span>}
+      </div>
+      <div className="video-info">
+        <h2>{title}</h2>
+        <div className="video-meta">
+          {video?.rate != null && <span>★ {video.rate}</span>}
+          {video?.views != null && <span>{video.views} views</span>}
+          {video?.length_min != null && <span>{video.length_min} min</span>}
         </div>
-        <div className="space-y-2 p-3">
-          <h2 className="line-clamp-2 text-sm font-semibold text-white group-hover:text-red-400">
-            {video.title || 'Untitled video'}
-          </h2>
-          <div className="flex items-center justify-between gap-2 text-xs text-zinc-400">
-            <span>★ {video.rate ?? '—'}</span>
-            <span>👁 {video.views ?? '—'}</span>
-          </div>
-        </div>
-      </button>
-    </article>
+      </div>
+    </button>
   );
 }
