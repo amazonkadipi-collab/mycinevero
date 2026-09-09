@@ -54,7 +54,7 @@ export async function savePortalSettings(settings: PortalSettings) {
   const rows = KEYS.map((key) => ({
     key: `elovex_${key}`,
     value: String(settings[key]),
-    value_type: typeof settings[key] === 'number' ? 'number' : 'string',
+    value_type: typeof settings[key] === 'number' ? 'number' : 'text',
     description: `Elovex portal setting: ${key}`,
     updated_by: 'admin',
     updated_at: new Date().toISOString(),
