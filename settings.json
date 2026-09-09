@@ -1,0 +1,9 @@
+{
+  "query": "all",
+  "order": "latest",
+  "per_page": 24,
+  "thumbsize": "medium",
+  "gay": 0,
+  "lq": 1,
+  "format": "json"
+}
