@@ -5,6 +5,7 @@ import path from 'node:path';
 export const dynamic = 'force-dynamic';
 
 const SETTINGS_FILE = path.join(process.cwd(), 'settings.json');
+const ADMIN_COOKIE = 'video_portal_admin';
 
 const DEFAULT_SETTINGS = {
   query: 'all',
@@ -60,11 +61,19 @@ function validateSettings(input: Record<string, unknown>) {
   return { query, order, per_page, thumbsize, gay, lq, format };
 }
 
+function isAdmin(request: NextRequest) {
+  return request.cookies.get(ADMIN_COOKIE)?.value === 'authenticated';
+}
+
 export async function GET() {
   return NextResponse.json(await readSettings());
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const settings = validateSettings(body);
