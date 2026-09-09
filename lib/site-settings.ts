@@ -1,5 +1,5 @@
 const SUPABASE_URL = process.env.SUPABASE_URL?.trim();
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+const SUPABASE_SERVER_KEY = process.env.SUPABASE_SECRET_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
 export type PortalSettings = {
   query: string;
@@ -9,22 +9,41 @@ export type PortalSettings = {
   gay: number;
   lq: number;
   format: 'json';
+  api_base_url: string;
+  api_search_path: string;
+  api_details_path: string;
+  api_timeout_ms: number;
+  api_format: 'json';
 };
 
 export const DEFAULT_PORTAL_SETTINGS: PortalSettings = {
-  query: 'all', order: 'latest', per_page: 30, thumbsize: 'medium', gay: 0, lq: 1, format: 'json',
+  query: 'all',
+  order: 'latest',
+  per_page: 30,
+  thumbsize: 'medium',
+  gay: 0,
+  lq: 1,
+  format: 'json',
+  api_base_url: 'SAMPLE_API_BASE_URL',
+  api_search_path: '/search',
+  api_details_path: '/details',
+  api_timeout_ms: 10000,
+  api_format: 'json',
 };
 
 const KEYS = Object.keys(DEFAULT_PORTAL_SETTINGS) as (keyof PortalSettings)[];
+const TEXT_KEYS = new Set<keyof PortalSettings>([
+  'query', 'order', 'thumbsize', 'format', 'api_base_url', 'api_search_path', 'api_details_path', 'api_format',
+]);
 
 async function supabaseRequest(path: string, init?: RequestInit) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase is not configured');
+  if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) throw new Error('Supabase is not configured');
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     cache: 'no-store',
     headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: SUPABASE_SERVER_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVER_KEY}`,
       'Content-Type': 'application/json',
       ...(init?.headers || {}),
     },
@@ -32,7 +51,7 @@ async function supabaseRequest(path: string, init?: RequestInit) {
 }
 
 export async function getPortalSettings(): Promise<PortalSettings> {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return { ...DEFAULT_PORTAL_SETTINGS };
+  if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) return { ...DEFAULT_PORTAL_SETTINGS };
   try {
     const response = await supabaseRequest('site_settings?select=key,value&key=like.elovex_*');
     if (!response.ok) throw new Error(`Supabase returned HTTP ${response.status}`);
@@ -41,7 +60,7 @@ export async function getPortalSettings(): Promise<PortalSettings> {
     for (const row of rows) {
       const key = row.key.replace(/^elovex_/, '') as keyof PortalSettings;
       if (!KEYS.includes(key)) continue;
-      settings[key] = key === 'query' || key === 'order' || key === 'thumbsize' || key === 'format' ? row.value : Number(row.value);
+      settings[key] = TEXT_KEYS.has(key) ? row.value : Number(row.value);
     }
     return { ...DEFAULT_PORTAL_SETTINGS, ...settings } as PortalSettings;
   } catch {
@@ -50,7 +69,7 @@ export async function getPortalSettings(): Promise<PortalSettings> {
 }
 
 export async function savePortalSettings(settings: PortalSettings) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel.');
+  if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) throw new Error('Supabase is not configured. Add SUPABASE_URL and SUPABASE_SECRET_KEY in Vercel.');
   const rows = KEYS.map((key) => ({
     key: `elovex_${key}`,
     value: String(settings[key]),
