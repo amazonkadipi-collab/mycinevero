@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DEFAULT_PORTAL_SETTINGS, getPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
 
 export const dynamic = 'force-dynamic';
-const ADMIN_COOKIE = 'video_portal_admin';
+const ADMIN_COOKIE = 'elovex_admin';
 const ORDERS = new Set(['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly']);
 const THUMB_SIZES = new Set(['small', 'medium', 'big']);
 
