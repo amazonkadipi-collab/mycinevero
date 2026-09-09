@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '111111';
 const COOKIE_NAME = 'video_portal_admin';
 
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    authenticated: request.cookies.get(COOKIE_NAME)?.value === 'authenticated',
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
