@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Save, Settings2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, LogOut, Save, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 
 const DEFAULTS = {
@@ -25,11 +25,24 @@ const orders = [
 ];
 
 export default function AdminPage() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
   const [settings, setSettings] = useState(DEFAULTS);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    fetch('/api/admin/login', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((data) => setAuthenticated(Boolean(data.authenticated)))
+      .catch(() => setAuthenticated(false));
+  }, []);
+
+  useEffect(() => {
+    if (!authenticated) return;
+
     fetch('/api/settings', { cache: 'no-store' })
       .then((response) => {
         if (!response.ok) throw new Error('Failed to load settings');
@@ -37,11 +50,38 @@ export default function AdminPage() {
       })
       .then((data) => setSettings({ ...DEFAULTS, ...data }))
       .catch(() => setMessage('Using default settings.'));
-  }, []);
+  }, [authenticated]);
 
   const update = (key: keyof typeof DEFAULTS, value: string | number) => {
     setSettings((current) => ({ ...current, [key]: value }));
   };
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Invalid password');
+      setPassword('');
+      setAuthenticated(true);
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : 'Invalid password');
+    } finally {
+      setLoggingIn(false);
+    }
+  }
+
+  async function handleLogout() {
+    await fetch('/api/admin/login', { method: 'DELETE' });
+    setAuthenticated(false);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,28 +107,82 @@ export default function AdminPage() {
     }
   }
 
+  const header = (
+    <header className="bg-red-800 text-white shadow-md border-b border-red-900/60 sticky top-0 z-40">
+      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded bg-zinc-950 flex items-center justify-center border border-red-500/40">
+            <Settings2 className="w-4 h-4 text-red-500" />
+          </div>
+          <div>
+            <div className="text-lg font-black tracking-tight text-white">
+              VIDEO<span className="bg-zinc-950 text-red-500 px-1.5 py-0.5 rounded text-xs ml-1 border border-red-900/80">PORTAL</span>
+            </div>
+            <div className="text-[10px] text-red-200/80 tracking-wider uppercase font-medium">Admin Dashboard</div>
+          </div>
+        </div>
+
+        {authenticated && (
+          <div className="flex items-center gap-3">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm text-red-100 hover:text-white transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Back to portal
+            </Link>
+            <button onClick={handleLogout} className="inline-flex items-center gap-2 text-sm text-red-100 hover:text-white transition-colors">
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+
+  if (authenticated === null) {
+    return <div className="min-h-screen bg-zinc-900 text-gray-200" />;
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-zinc-900 text-gray-200 font-sans selection:bg-red-700 selection:text-white">
+        {header}
+        <main className="max-w-md mx-auto px-4 py-16">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 border-b border-zinc-800">
+              <h1 className="text-xl font-bold text-white">Admin Login</h1>
+              <p className="mt-1 text-sm text-zinc-500">Enter the administrator password to continue.</p>
+            </div>
+            <form onSubmit={handleLogin} className="p-6 space-y-5">
+              <label className="block">
+                <span className="block mb-2 text-sm font-medium text-zinc-300">Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                  required
+                  className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500"
+                  placeholder="Admin password"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={loggingIn || !password}
+                className="w-full rounded-md bg-red-700 hover:bg-red-600 disabled:opacity-60 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+              >
+                {loggingIn ? 'Signing in...' : 'Login'}
+              </button>
+              {loginError && <div className="rounded-md border border-red-900/60 bg-red-950/30 px-3 py-2.5 text-sm text-red-400">{loginError}</div>}
+            </form>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-900 text-gray-200 font-sans selection:bg-red-700 selection:text-white">
-      <header className="bg-red-800 text-white shadow-md border-b border-red-900/60 sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded bg-zinc-950 flex items-center justify-center border border-red-500/40">
-              <Settings2 className="w-4 h-4 text-red-500" />
-            </div>
-            <div>
-              <div className="text-lg font-black tracking-tight text-white">
-                VIDEO<span className="bg-zinc-950 text-red-500 px-1.5 py-0.5 rounded text-xs ml-1 border border-red-900/80">PORTAL</span>
-              </div>
-              <div className="text-[10px] text-red-200/80 tracking-wider uppercase font-medium">Admin Dashboard</div>
-            </div>
-          </div>
-
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-red-100 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Back to portal
-          </Link>
-        </div>
-      </header>
+      {header}
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden">
@@ -100,12 +194,7 @@ export default function AdminPage() {
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <label className="block">
               <span className="block mb-2 text-sm font-medium text-zinc-300">Search Query</span>
-              <input
-                value={settings.query}
-                onChange={(e) => update('query', e.target.value)}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500"
-                placeholder="all"
-              />
+              <input value={settings.query} onChange={(e) => update('query', e.target.value)} className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500" placeholder="all" />
             </label>
 
             <label className="block">
@@ -118,52 +207,39 @@ export default function AdminPage() {
             <label className="block">
               <span className="block mb-2 text-sm font-medium text-zinc-300">Per Page</span>
               <select value={settings.per_page} onChange={(e) => update('per_page', Number(e.target.value))} className="admin-select">
-                <option value={12}>12</option>
-                <option value={24}>24</option>
-                <option value={48}>48</option>
+                <option value={12}>12</option><option value={24}>24</option><option value={48}>48</option>
               </select>
             </label>
 
             <label className="block">
               <span className="block mb-2 text-sm font-medium text-zinc-300">Thumb Size</span>
               <select value={settings.thumbsize} onChange={(e) => update('thumbsize', e.target.value)} className="admin-select">
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="big">Big</option>
+                <option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option>
               </select>
             </label>
 
             <label className="block">
               <span className="block mb-2 text-sm font-medium text-zinc-300">Gay Content</span>
               <select value={settings.gay} onChange={(e) => update('gay', Number(e.target.value))} className="admin-select">
-                <option value={0}>Exclude</option>
-                <option value={1}>Include</option>
-                <option value={2}>Only</option>
+                <option value={0}>Exclude</option><option value={1}>Include</option><option value={2}>Only</option>
               </select>
             </label>
 
             <label className="block">
               <span className="block mb-2 text-sm font-medium text-zinc-300">Low Quality</span>
               <select value={settings.lq} onChange={(e) => update('lq', Number(e.target.value))} className="admin-select">
-                <option value={0}>Exclude</option>
-                <option value={1}>Include</option>
-                <option value={2}>Only</option>
+                <option value={0}>Exclude</option><option value={1}>Include</option><option value={2}>Only</option>
               </select>
             </label>
 
             <label className="block">
               <span className="block mb-2 text-sm font-medium text-zinc-300">Format</span>
               <select value={settings.format} onChange={(e) => update('format', e.target.value)} className="admin-select">
-                <option value="json">JSON</option>
-                <option value="xml">XML</option>
+                <option value="json">JSON</option><option value="xml">XML</option>
               </select>
             </label>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-red-700 hover:bg-red-600 disabled:opacity-60 px-4 py-2.5 text-sm font-bold text-white transition-colors"
-            >
+            <button type="submit" disabled={saving} className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-red-700 hover:bg-red-600 disabled:opacity-60 px-4 py-2.5 text-sm font-bold text-white transition-colors">
               <Save className="w-4 h-4" />
               {saving ? 'Saving...' : 'Save Settings'}
             </button>
@@ -178,21 +254,7 @@ export default function AdminPage() {
         </div>
       </main>
 
-      <style jsx>{`
-        .admin-select {
-          width: 100%;
-          border-radius: 0.375rem;
-          border: 1px solid rgb(63 63 70);
-          background: rgb(24 24 27);
-          padding: 0.625rem 0.75rem;
-          color: white;
-          font-size: 0.875rem;
-          outline: none;
-        }
-        .admin-select:focus {
-          border-color: rgb(239 68 68);
-        }
-      `}</style>
+      <style jsx>{` .admin-select { width: 100%; border-radius: 0.375rem; border: 1px solid rgb(63 63 70); background: rgb(24 24 27); padding: 0.625rem 0.75rem; color: white; font-size: 0.875rem; outline: none; } .admin-select:focus { border-color: rgb(239 68 68); } `}</style>
     </div>
   );
 }
