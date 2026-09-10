@@ -1,16 +1,14 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Activity,
   ArrowLeft,
-  Check,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
-  ExternalLink,
-  Globe2,
   KeyRound,
   LogIn,
   LogOut,
@@ -21,9 +19,6 @@ import {
   Server,
   Settings2,
   SlidersHorizontal,
-  Timer,
-  Video,
-  X,
 } from 'lucide-react';
 
 type Settings = {
@@ -105,18 +100,24 @@ export default function AdminPage() {
 
   async function login(e: FormEvent) {
     e.preventDefault();
-    setBusy(true); setError('');
+    setBusy(true);
+    setError('');
     try {
       const r = await fetch('/api/admin/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Invalid credentials');
-      setUsername(''); setPassword(''); setAuthenticated(true);
+      setUsername('');
+      setPassword('');
+      setAuthenticated(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid credentials');
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function logout() {
@@ -126,10 +127,14 @@ export default function AdminPage() {
 
   async function save(e: FormEvent) {
     e.preventDefault();
-    setBusy(true); setMessage(''); setError('');
+    setBusy(true);
+    setMessage('');
+    setError('');
     try {
       const r = await fetch('/api/settings', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Failed to save settings');
@@ -137,10 +142,12 @@ export default function AdminPage() {
       setMessage('All settings saved successfully.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save settings');
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
-  const configured = useMemo(() => Boolean(settings.api_base_url && settings.api_base_url !== 'SAMPLE_API_BASE_URL'), [settings.api_base_url]);
+  const configured = Boolean(settings.api_base_url && settings.api_base_url !== 'SAMPLE_API_BASE_URL');
 
   if (authenticated === null) return <div className="min-h-screen bg-[#09090b]" />;
 
@@ -149,7 +156,7 @@ export default function AdminPage() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600/15 ring-1 ring-red-500/20">
-            <Settings2 className="h-4.5 w-4.5 text-red-400" />
+            <Settings2 className="h-4 w-4 text-red-400" />
           </div>
           <div>
             <div className="text-sm font-black tracking-[0.18em] text-white">ELOVEX</div>
@@ -262,7 +269,7 @@ export default function AdminPage() {
   );
 }
 
-function Field({ label, hint, children, full = false }: { label: string; hint?: string; children: React.ReactNode; full?: boolean }) {
+function Field({ label, hint, children, full = false }: { label: string; hint?: string; children: ReactNode; full?: boolean }) {
   return <label className={full ? 'sm:col-span-2' : ''}><span className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold text-zinc-400"><span>{label}</span>{hint && <span className="font-normal text-zinc-600">{hint}</span>}</span>{children}</label>;
 }
 
@@ -270,7 +277,7 @@ function Select({ value, placeholder, options, onChange, suffix }: { value: stri
   return <div className="relative"><select value={String(value)} onChange={(e) => onChange(e.target.value)} className={selectClass}><option value="">{placeholder}</option>{options.map((option) => <option key={String(option)} value={String(option)}>{String(option)}{suffix ? ` ${suffix}` : ''}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" /></div>;
 }
 
-function Section({ icon, title, description, children }: { icon: React.ReactNode; title: string; description: string; children: React.ReactNode }) {
+function Section({ icon, title, description, children }: { icon: ReactNode; title: string; description: string; children: ReactNode }) {
   return <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#101012] shadow-xl shadow-black/10"><div className="border-b border-white/10 bg-white/[0.015] px-5 py-4 sm:px-6"><div className="flex items-start gap-3"><div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400">{icon}</div><div><h2 className="text-sm font-bold text-white">{title}</h2><p className="mt-1 text-xs leading-5 text-zinc-600">{description}</p></div></div></div><div className="p-5 sm:p-6">{children}</div></section>;
 }
 
