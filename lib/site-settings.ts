@@ -21,7 +21,7 @@ export type PortalSettings = {
 };
 
 export const DEFAULT_PORTAL_SETTINGS: PortalSettings = {
-  query: 'all', order: 'latest', per_page: 30, thumbsize: 'medium', gay: 0, lq: 1, format: 'json',
+  query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1, format: 'json',
   method: 'search', video_id: '', api_base_url: 'SAMPLE_API_BASE_URL', api_search_path: '/search', api_details_path: '/details',
   api_timeout_ms: 10000, api_format: 'json', items_per_page: 24, cache_duration: 0,
 };
@@ -39,21 +39,38 @@ async function supabaseRequest(path: string, init?: RequestInit) {
   });
 }
 
+function parseRows(rows: { key: string; value: string }[]) {
+  const settings: Partial<PortalSettings> = {};
+  for (const row of rows) {
+    const key = row.key.replace(/^elovex_/, '') as keyof PortalSettings;
+    if (!KEYS.includes(key)) continue;
+    settings[key] = (TEXT_KEYS.has(key) ? row.value : (row.value === '' ? '' : Number(row.value))) as never;
+  }
+  return settings;
+}
+
 export async function getPortalSettings(): Promise<PortalSettings> {
   if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) return { ...DEFAULT_PORTAL_SETTINGS };
   try {
     const response = await supabaseRequest('site_settings?select=key,value&key=like.elovex_*');
     if (!response.ok) throw new Error(`Supabase returned HTTP ${response.status}`);
     const rows = (await response.json()) as { key: string; value: string }[];
-    const settings: Record<string, unknown> = { ...DEFAULT_PORTAL_SETTINGS };
-    for (const row of rows) {
-      const key = row.key.replace(/^elovex_/, '') as keyof PortalSettings;
-      if (!KEYS.includes(key)) continue;
-      settings[key] = TEXT_KEYS.has(key) ? row.value : (row.value === '' ? '' : Number(row.value));
-    }
-    return { ...DEFAULT_PORTAL_SETTINGS, ...settings } as PortalSettings;
+    return { ...DEFAULT_PORTAL_SETTINGS, ...parseRows(rows) } as PortalSettings;
   } catch {
     return { ...DEFAULT_PORTAL_SETTINGS };
+  }
+}
+
+/** Returns only explicitly saved portal values; missing keys stay empty for the Admin UI. */
+export async function getSavedPortalSettings(): Promise<Partial<PortalSettings>> {
+  if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) return {};
+  try {
+    const response = await supabaseRequest('site_settings?select=key,value&key=like.elovex_*');
+    if (!response.ok) throw new Error(`Supabase returned HTTP ${response.status}`);
+    const rows = (await response.json()) as { key: string; value: string }[];
+    return parseRows(rows);
+  } catch {
+    return {};
   }
 }
 
