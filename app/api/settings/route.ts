@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DEFAULT_PORTAL_SETTINGS, getPortalSettings, getSavedPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
+import { DEFAULT_PORTAL_SETTINGS, getPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
 
 export const dynamic = 'force-dynamic';
 const ADMIN_COOKIE = 'elovex_admin';
@@ -58,14 +58,23 @@ function validateSettings(input: Record<string, unknown>): PortalSettings {
 }
 
 const ADMIN_FIELDS: (keyof PortalSettings)[] = ['query','order','per_page','thumbsize','gay','lq','format','method','video_id','api_base_url','items_per_page','cache_duration'];
-function blankAdminSettings(saved: Partial<PortalSettings>): Record<string, unknown> {
-  return Object.fromEntries(ADMIN_FIELDS.map((key) => [key, saved[key] ?? '']));
+
+/**
+ * Admin must show the same effective values the public site is using.
+ * Empty saved values are therefore displayed as the site's defaults rather than blank fields.
+ */
+function adminSettings(settings: PortalSettings): Record<string, unknown> {
+  return Object.fromEntries(ADMIN_FIELDS.map((key) => {
+    const value = settings[key];
+    const fallback = DEFAULT_PORTAL_SETTINGS[key];
+    return [key, value === '' ? fallback : value];
+  }));
 }
 
 export async function GET(request: NextRequest) {
   if (isAdmin(request)) {
-    const saved = await getSavedPortalSettings();
-    return NextResponse.json({ success: true, settings: blankAdminSettings(saved) }, { headers: { 'Cache-Control': 'no-store' } });
+    const settings = await getPortalSettings();
+    return NextResponse.json({ success: true, settings: adminSettings(settings) }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
   const settings = await getPortalSettings();
@@ -77,7 +86,7 @@ export async function POST(request: NextRequest) {
   try {
     const settings = validateSettings(await request.json());
     await savePortalSettings(settings);
-    return NextResponse.json({ success: true, message: 'Settings saved successfully!', settings: blankAdminSettings(settings) });
+    return NextResponse.json({ success: true, message: 'Settings saved successfully!', settings: adminSettings(settings) });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid settings' }, { status: 400 });
   }
