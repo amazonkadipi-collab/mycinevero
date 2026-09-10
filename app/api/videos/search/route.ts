@@ -50,7 +50,8 @@ export async function GET(request: NextRequest) {
     url.searchParams.set('format', 'json');
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), settings.api_timeout_ms);
+    const timeoutMs = typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 10000;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         cache: 'no-store',
