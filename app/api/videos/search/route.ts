@@ -1,43 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getPortalSettings } from '@/lib/site-settings';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED = new Set(['query', 'page', 'per_page', 'thumbsize', 'order', 'gay', 'lq', 'format']);
 const ORDERS = new Set(['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly']);
 const THUMB_SIZES = new Set(['small', 'medium', 'big']);
 
+function buildEndpoint(base: string, path: string) {
+  const url = new URL(base);
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  url.pathname = `${url.pathname.replace(/\/$/, '')}${normalizedPath}`;
+  return url;
+}
+
 export async function GET(request: NextRequest) {
-  const upstreamBase = process.env.API_URL?.trim() || process.env.VIDEO_SEARCH_API_URL?.trim();
-  if (!upstreamBase) return NextResponse.json({ error: 'Video API is not configured', videos: [], total_count: 0, total_pages: 0 }, { status: 503 });
+  const settings = await getPortalSettings();
+  if (!settings.api_base_url || settings.api_base_url === 'SAMPLE_API_BASE_URL') {
+    return NextResponse.json(
+      { error: 'Video API is not configured. Set a valid API Base URL in Admin Settings.', videos: [], total_count: 0, total_pages: 0 },
+      { status: 503 },
+    );
+  }
+
   try {
-    const url = new URL(upstreamBase);
+    const url = buildEndpoint(settings.api_base_url, settings.api_search_path);
     const input = request.nextUrl.searchParams;
-    const query = input.get('query') || input.get('q') || 'all';
+    const query = (input.get('query') || input.get('q') || settings.query || 'all').trim().slice(0, 200) || 'all';
     const page = Number(input.get('page') || 1);
-    const perPage = Number(input.get('per_page') || 30);
-    const order = input.get('order') || 'latest';
-    const thumbsize = input.get('thumbsize') || 'medium';
-    const gay = Number(input.get('gay') || 0);
-    const lq = Number(input.get('lq') || 1);
+    const perPage = Number(input.get('per_page') || settings.per_page);
+    const order = input.get('order') || settings.order;
+    const thumbsize = input.get('thumbsize') || settings.thumbsize;
+    const gay = Number(input.get('gay') ?? settings.gay);
+    const lq = Number(input.get('lq') ?? settings.lq);
+
     if (!Number.isInteger(page) || page < 1 || page > 1_000_000) return NextResponse.json({ error: 'Invalid page' }, { status: 400 });
     if (!Number.isInteger(perPage) || perPage < 1 || perPage > 1000) return NextResponse.json({ error: 'Invalid per_page' }, { status: 400 });
     if (!ORDERS.has(order)) return NextResponse.json({ error: 'Invalid order' }, { status: 400 });
     if (!THUMB_SIZES.has(thumbsize)) return NextResponse.json({ error: 'Invalid thumbsize' }, { status: 400 });
     if (![0, 1, 2].includes(gay)) return NextResponse.json({ error: 'Invalid secondary category value' }, { status: 400 });
     if (![0, 1, 2].includes(lq)) return NextResponse.json({ error: 'Invalid lq value' }, { status: 400 });
-    const values: Record<string, string> = { query, page: String(page), per_page: String(perPage), thumbsize, order, gay: String(gay), lq: String(lq), format: 'json' };
-    for (const key of ALLOWED) if (values[key] !== undefined) url.searchParams.set(key, values[key]);
+
+    url.searchParams.set('query', query);
+    url.searchParams.set('page', String(page));
+    url.searchParams.set('per_page', String(perPage));
+    url.searchParams.set('order', order);
+    url.searchParams.set('thumbsize', thumbsize);
+    url.searchParams.set('gay', String(gay));
+    url.searchParams.set('lq', String(lq));
+    url.searchParams.set('format', 'json');
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), settings.api_timeout_ms);
     try {
-      const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal });
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
       const text = await response.text();
       let body: unknown;
-      try { body = JSON.parse(text); } catch { body = { error: 'Upstream API did not return valid JSON' }; }
-      if (!response.ok) return NextResponse.json({ error: `Upstream API returned HTTP ${response.status}` }, { status: 502 });
+      try { body = JSON.parse(text); } catch { body = null; }
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: `Configured video API returned HTTP ${response.status}`, videos: [], total_count: 0, total_pages: 0 },
+          { status: 502 },
+        );
+      }
+      if (body === null) {
+        return NextResponse.json(
+          { error: 'Configured video API did not return valid JSON', videos: [], total_count: 0, total_pages: 0 },
+          { status: 502 },
+        );
+      }
       return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } });
-    } finally { clearTimeout(timeout); }
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to reach configured video API', videos: [], total_count: 0, total_pages: 0 }, { status: 502 });
+    const message = error instanceof Error && error.name === 'AbortError'
+      ? 'Configured video API timed out'
+      : error instanceof Error
+        ? error.message
+        : 'Unable to reach configured video API';
+    return NextResponse.json({ error: message, videos: [], total_count: 0, total_pages: 0 }, { status: 502 });
   }
 }
