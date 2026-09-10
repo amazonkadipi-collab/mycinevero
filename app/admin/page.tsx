@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, LogIn, LogOut, Save, Settings2 } from 'lucide-react';
 
@@ -47,7 +47,7 @@ export default function AdminPage() {
 
   const input='w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500';
   const select=input+' cursor-pointer';
-  const label=(title:string,child:React.ReactNode,full=false)=><label className={full?'sm:col-span-2':''}><span className="mb-2 block text-sm text-zinc-300">{title}</span>{child}</label>;
+  const label=(title:string,child:ReactNode,full=false)=><label className={full?'sm:col-span-2':''}><span className="mb-2 block text-sm text-zinc-300">{title}</span>{child}</label>;
   const makeSelect=(value:string|number,placeholder:string,options:(string|number)[],onChange:(v:string)=>void)=><select value={String(value)} onChange={e=>onChange(e.target.value)} className={select}><option value="">{placeholder}</option>{options.map(v=><option key={String(v)} value={String(v)}>{String(v)}</option>)}</select>;
 
   return <div className="min-h-screen bg-zinc-950 text-zinc-200">{header}<main className="mx-auto max-w-5xl px-4 py-8"><form onSubmit={save} className="space-y-6"><div><h1 className="text-2xl font-bold text-white">API Settings</h1><p className="mt-1 text-sm text-zinc-500">Configure all API parameters. Fields are blank until configured.</p></div>
