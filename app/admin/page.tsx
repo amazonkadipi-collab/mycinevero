@@ -4,48 +4,73 @@ import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, LogIn, LogOut, Save, Settings2 } from 'lucide-react';
 
-const DEFAULTS = {
-  query: 'all', order: 'latest', per_page: 30, thumbsize: 'medium', gay: 0, lq: 1, format: 'json',
-  api_base_url: 'SAMPLE_API_BASE_URL', api_search_path: '/search', api_details_path: '/details', api_timeout_ms: 10000, api_format: 'json',
+type Settings = {
+  query: string; order: string; per_page: number | ''; thumbsize: string; gay: number | ''; lq: number | ''; format: string;
+  method: string; video_id: string; api_base_url: string; api_search_path: string; api_details_path: string;
+  api_timeout_ms: number | ''; api_format: string; items_per_page: number | ''; cache_duration: number | '';
 };
-const ORDERS = [['latest','Latest'],['longest','Longest'],['shortest','Shortest'],['top-rated','Top Rated'],['most-popular','Most Popular'],['top-weekly','Top Weekly'],['top-monthly','Top Monthly']];
-const PER_PAGE = [12,30,48,96,250,500,1000];
+
+const EMPTY: Settings = {
+  query:'', order:'', per_page:'', thumbsize:'', gay:'', lq:'', format:'', method:'', video_id:'', api_base_url:'',
+  api_search_path:'', api_details_path:'', api_timeout_ms:'', api_format:'', items_per_page:'', cache_duration:'',
+};
+const ORDERS = ['latest','longest','shortest','top-rated','most-popular','top-weekly','top-monthly'];
+const PAGES = [12,24,48,96];
+const THUMBS = ['small','medium','big'];
+const FILTERS = [0,1,2];
+const FORMATS = ['json','xml'];
+const METHODS = ['search','id','removed'];
+const CACHE = [0,60,300,3600];
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [settings, setSettings] = useState(DEFAULTS);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [authenticated,setAuthenticated] = useState<boolean|null>(null);
+  const [username,setUsername] = useState('');
+  const [password,setPassword] = useState('');
+  const [settings,setSettings] = useState<Settings>(EMPTY);
+  const [message,setMessage] = useState('');
+  const [error,setError] = useState('');
+  const [busy,setBusy] = useState(false);
 
-  useEffect(() => { fetch('/api/admin/login', { cache: 'no-store' }).then(r => r.json()).then(d => setAuthenticated(Boolean(d.authenticated))).catch(() => setAuthenticated(false)); }, []);
-  useEffect(() => { if (!authenticated) return; fetch('/api/settings', { cache: 'no-store' }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error); return d.settings || d; }).then(d => setSettings({ ...DEFAULTS, ...d, format: 'json', api_format: 'json' })).catch(() => setError('Using default settings.')); }, [authenticated]);
+  useEffect(()=>{ fetch('/api/admin/login',{cache:'no-store'}).then(r=>r.json()).then(d=>setAuthenticated(Boolean(d.authenticated))).catch(()=>setAuthenticated(false)); },[]);
+  useEffect(()=>{ if(!authenticated) return; fetch('/api/settings',{cache:'no-store'}).then(async r=>{const d=await r.json(); if(!r.ok) throw new Error(d.error); return d.settings||EMPTY;}).then(d=>setSettings({...EMPTY,...d})).catch(e=>setError(e instanceof Error?e.message:'Failed to load settings.')); },[authenticated]);
 
-  async function login(e: FormEvent) { e.preventDefault(); setBusy(true); setError(''); try { const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username, password }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Invalid credentials'); setUsername(''); setPassword(''); setAuthenticated(true); } catch (e) { setError(e instanceof Error ? e.message : 'Invalid credentials'); } finally { setBusy(false); } }
-  async function logout() { await fetch('/api/admin/login', { method:'DELETE' }); setAuthenticated(false); }
-  async function save(e: FormEvent) { e.preventDefault(); setBusy(true); setMessage(''); setError(''); try { const r = await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ...settings, per_page:Number(settings.per_page), gay:Number(settings.gay), lq:Number(settings.lq), api_timeout_ms:Number(settings.api_timeout_ms), format:'json', api_format:'json' }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed to save settings'); setSettings(d.settings); setMessage('Settings saved successfully.'); } catch (e) { setError(e instanceof Error ? e.message : 'Failed to save settings'); } finally { setBusy(false); } }
+  const set = (key:keyof Settings,value:string|number) => setSettings(s=>({...s,[key]:value}));
 
-  if (authenticated === null) return <div className="min-h-screen bg-zinc-950" />;
-  const header = <header className="sticky top-0 z-40 border-b border-red-950 bg-red-800 text-white"><div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><Settings2 className="h-5 w-5 text-red-300" /><div><div className="font-black">ELOVEX</div><div className="text-[10px] uppercase tracking-wider text-red-200/70">Admin Dashboard</div></div></div>{authenticated && <div className="flex items-center gap-4 text-sm"><Link href="/" className="flex items-center gap-1 text-red-100 hover:text-white"><ArrowLeft className="h-4 w-4" />Portal</Link><button onClick={logout} className="flex items-center gap-1 text-red-100 hover:text-white"><LogOut className="h-4 w-4" />Logout</button></div>}</div></header>;
+  async function login(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Invalid credentials');setUsername('');setPassword('');setAuthenticated(true);}catch(e){setError(e instanceof Error?e.message:'Invalid credentials');}finally{setBusy(false);}}
+  async function logout(){await fetch('/api/admin/login',{method:'DELETE'});setAuthenticated(false);}
+  async function save(e:FormEvent){e.preventDefault();setBusy(true);setMessage('');setError('');try{const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed to save settings');setSettings({...EMPTY,...d.settings});setMessage('Settings saved successfully.');}catch(e){setError(e instanceof Error?e.message:'Failed to save settings');}finally{setBusy(false);}}
 
-  if (!authenticated) return <div className="min-h-screen bg-zinc-950 text-zinc-200">{header}<main className="mx-auto max-w-md px-4 py-16"><form onSubmit={login} className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"><div className="mb-6"><h1 className="text-xl font-bold text-white">Admin Login</h1><p className="mt-1 text-sm text-zinc-500">Sign in to manage Elovex dashboard settings.</p></div><input required autoFocus value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username" autoComplete="username" className="mb-3 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500" /><input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Admin password" autoComplete="current-password" className="mb-4 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500" /><button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 font-bold text-white hover:bg-red-600 disabled:opacity-50"><LogIn className="h-4 w-4" />{busy ? 'Signing in...' : 'Login'}</button>{error && <p className="mt-4 rounded-lg border border-red-900 bg-red-950/30 p-3 text-sm text-red-300">{error}</p>}</form></main></div>;
+  if(authenticated===null)return <div className="min-h-screen bg-zinc-950"/>;
+  const header=<header className="sticky top-0 z-40 border-b border-red-950 bg-red-800 text-white"><div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3"><div className="flex items-center gap-3"><Settings2 className="h-5 w-5 text-red-300"/><div><div className="font-black">ELOVEX</div><div className="text-[10px] uppercase tracking-wider text-red-200/70">Admin Dashboard</div></div></div>{authenticated&&<div className="flex items-center gap-4 text-sm"><Link href="/" className="flex items-center gap-1 text-red-100 hover:text-white"><ArrowLeft className="h-4 w-4"/>Portal</Link><button onClick={logout} className="flex items-center gap-1 text-red-100 hover:text-white"><LogOut className="h-4 w-4"/>Logout</button></div>}</div></header>;
 
-  return <div className="min-h-screen bg-zinc-950 text-zinc-200">{header}<main className="mx-auto max-w-3xl px-4 py-8"><form onSubmit={save} className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"><div className="mb-6"><h1 className="text-xl font-bold text-white">Elovex Video Search Settings</h1><p className="mt-1 text-sm text-zinc-500">Configure portal defaults and the generic API adapter. Real provider credentials/location stay server-side.</p></div><div className="grid gap-5 sm:grid-cols-2">
-    <label className="sm:col-span-2"><span className="mb-2 block text-sm text-zinc-300">Search Query</span><input value={settings.query} onChange={e=>setSettings({...settings,query:e.target.value})} className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500" /></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Order</span><select value={settings.order} onChange={e=>setSettings({...settings,order:e.target.value})} className="w-full rounded-lg border border-zinc-700 bg-zinc-950 p-2.5 text-white outline-none focus:border-red-500">{ORDERS.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Per Page</span><select value={settings.per_page} onChange={e=>setSettings({...settings,per_page:Number(e.target.value)})} className="w-full rounded-lg border border-zinc-700 bg-zinc-950 p-2.5 text-white outline-none focus:border-red-500">{PER_PAGE.map(v=><option key={v} value={v}>{v}</option>)}</select></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Thumbnail Size</span><select value={settings.thumbsize} onChange={e=>setSettings({...settings,thumbsize:e.target.value})} className="w-full rounded-lg border border-zinc-700 bg-zinc-950 p-2.5 text-white outline-none focus:border-red-500"><option value="small">Small</option><option value="medium">Medium</option><option value="big">Big</option></select></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Secondary Category</span><select value={settings.gay} onChange={e=>setSettings({...settings,gay:Number(e.target.value)})} className="w-full rounded-lg border border-zinc-700 bg-zinc-950 p-2.5 text-white outline-none focus:border-red-500"><option value={0}>Exclude</option><option value={1}>Include</option><option value={2}>Only</option></select></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Low Quality</span><select value={settings.lq} onChange={e=>setSettings({...settings,lq:Number(e.target.value)})} className="w-full rounded-lg border border-zinc-700 bg-zinc-950 p-2.5 text-white outline-none focus:border-red-500"><option value={0}>Exclude</option><option value={1}>Include</option><option value={2}>Only</option></select></label>
-  </div>
-  <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/70 p-5"><div className="mb-4"><h2 className="font-semibold text-white">API Call Samples / Provider Adapter</h2><p className="mt-1 text-xs text-zinc-500">These are generic sample settings. The real provider URL and credentials are not embedded in the app.</p></div><div className="grid gap-5 sm:grid-cols-2">
-    <label className="sm:col-span-2"><span className="mb-2 block text-sm text-zinc-300">API Base URL</span><input value={settings.api_base_url} onChange={e=>setSettings({...settings,api_base_url:e.target.value})} placeholder="SAMPLE_API_BASE_URL" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-red-500" /><span className="mt-1 block text-xs text-zinc-600">Sample only. Keep the real provider location in the server environment when you configure it.</span></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Search Path</span><input value={settings.api_search_path} onChange={e=>setSettings({...settings,api_search_path:e.target.value})} placeholder="/search" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-red-500" /></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Details Path</span><input value={settings.api_details_path} onChange={e=>setSettings({...settings,api_details_path:e.target.value})} placeholder="/details" className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-red-500" /></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Timeout (ms)</span><input type="number" min={1000} max={60000} step={500} value={settings.api_timeout_ms} onChange={e=>setSettings({...settings,api_timeout_ms:Number(e.target.value)})} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-white outline-none focus:border-red-500" /></label>
-    <label><span className="mb-2 block text-sm text-zinc-300">Response Format</span><select value={settings.api_format} onChange={e=>setSettings({...settings,api_format:e.target.value as 'json'})} className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-white outline-none focus:border-red-500"><option value="json">JSON</option></select></label>
-  </div><div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900 p-3 font-mono text-xs text-zinc-500">/api/videos/search?q={'{query}'}&amp;page={'{page}'}&amp;per_page={'{per_page}'}&amp;order={'{order}'}&amp;thumbsize={'{thumbsize}'}&amp;lq={'{lq}'}&amp;format=json</div></div>
-  <div className="mt-6 flex items-center gap-3"><button disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-5 py-2.5 font-bold text-white hover:bg-red-600 disabled:opacity-50"><Save className="h-4 w-4" />{busy ? 'Saving...' : 'Save Settings'}</button>{message && <span className="inline-flex items-center gap-2 text-sm text-emerald-400"><CheckCircle2 className="h-4 w-4" />Settings saved.</span>}</div>{error && <p className="mt-4 rounded-lg border border-red-900 bg-red-950/30 p-3 text-sm text-red-300">{error}</p>}</form></main></div>;
+  if(!authenticated)return <div className="min-h-screen bg-zinc-950 text-zinc-200">{header}<main className="mx-auto max-w-md px-4 py-16"><form onSubmit={login} className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"><h1 className="mb-1 text-xl font-bold text-white">Admin Login</h1><p className="mb-6 text-sm text-zinc-500">Sign in to manage dashboard settings.</p><input required value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username" autoComplete="username" className="mb-3 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500"/><input required type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Admin password" autoComplete="current-password" className="mb-4 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500"/><button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 font-bold text-white hover:bg-red-600 disabled:opacity-50"><LogIn className="h-4 w-4"/>{busy?'Signing in...':'Login'}</button>{error&&<p className="mt-4 rounded-lg border border-red-900 bg-red-950/30 p-3 text-sm text-red-300">{error}</p>}</form></main></div>;
+
+  const input='w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-white outline-none focus:border-red-500';
+  const select=input+' cursor-pointer';
+  const label=(title:string,child:React.ReactNode,full=false)=><label className={full?'sm:col-span-2':''}><span className="mb-2 block text-sm text-zinc-300">{title}</span>{child}</label>;
+  const makeSelect=(value:string|number,placeholder:string,options:(string|number)[],onChange:(v:string)=>void)=><select value={String(value)} onChange={e=>onChange(e.target.value)} className={select}><option value="">{placeholder}</option>{options.map(v=><option key={String(v)} value={String(v)}>{String(v)}</option>)}</select>;
+
+  return <div className="min-h-screen bg-zinc-950 text-zinc-200">{header}<main className="mx-auto max-w-5xl px-4 py-8"><form onSubmit={save} className="space-y-6"><div><h1 className="text-2xl font-bold text-white">API Settings</h1><p className="mt-1 text-sm text-zinc-500">Configure all API parameters. Fields are blank until configured.</p></div>
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6"><h2 className="mb-5 text-lg font-semibold text-white">Search Settings</h2><div className="grid gap-5 sm:grid-cols-2">
+      {label('Search Query',<input value={settings.query} onChange={e=>set('query',e.target.value)} placeholder="Enter search query..." className={input}/> ,true)}
+      {label('Order',makeSelect(settings.order,'Select order...',ORDERS,v=>set('order',v)))}
+      {label('Per Page',makeSelect(settings.per_page,'Select per page...',PAGES,v=>set('per_page',v===''?'':Number(v))))}
+      {label('Thumb Size',makeSelect(settings.thumbsize,'Select thumb size...',THUMBS,v=>set('thumbsize',v)))}
+      {label('Filter Option A',makeSelect(settings.gay,'Select option...',FILTERS,v=>set('gay',v===''?'':Number(v))))}
+      {label('Filter Option B',makeSelect(settings.lq,'Select option...',FILTERS,v=>set('lq',v===''?'':Number(v))))}
+      {label('Response Format',makeSelect(settings.format,'Select format...',FORMATS,v=>set('format',v)))}
+    </div></section>
+
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6"><h2 className="mb-5 text-lg font-semibold text-white">API Methods</h2><div className="grid gap-5 sm:grid-cols-2">
+      {label('API Method',makeSelect(settings.method,'Select method...',METHODS,v=>set('method',v)))}
+      {label('Video ID',<input value={settings.video_id} onChange={e=>set('video_id',e.target.value)} placeholder="Enter video ID..." className={input}/>)}
+    </div></section>
+
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6"><h2 className="mb-5 text-lg font-semibold text-white">API Configuration</h2><div className="grid gap-5 sm:grid-cols-2">
+      {label('API Base URL',<input type="url" value={settings.api_base_url} onChange={e=>set('api_base_url',e.target.value)} placeholder="https://example.com/api/v2/" className={input}/>,true)}
+      {label('Items Per Page',makeSelect(settings.items_per_page,'Select items per page...',PAGES,v=>set('items_per_page',v===''?'':Number(v))))}
+      {label('Cache Duration',makeSelect(settings.cache_duration,'Select cache duration (seconds)...',CACHE,v=>set('cache_duration',v===''?'':Number(v))))}
+    </div></section>
+
+    <div className="flex flex-wrap items-center gap-3"><button disabled={busy} type="submit" className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-5 py-2.5 font-bold text-white hover:bg-red-600 disabled:opacity-50"><Save className="h-4 w-4"/>{busy?'Saving...':'Save Settings'}</button>{message&&<span className="inline-flex items-center gap-2 text-sm text-emerald-400"><CheckCircle2 className="h-4 w-4"/>{message}</span>}</div>{error&&<p className="rounded-lg border border-red-900 bg-red-950/30 p-3 text-sm text-red-300">{error}</p>}</form></main></div>;
 }
