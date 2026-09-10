@@ -31,11 +31,31 @@ function validateSettings(input: Record<string, unknown>): PortalSettings {
   if (![0, 1, 2].includes(gay)) throw new Error('Invalid secondary category value');
   if (![0, 1, 2].includes(lq)) throw new Error('Invalid lq value');
   if (!Number.isInteger(api_timeout_ms) || api_timeout_ms < 1000 || api_timeout_ms > 60000) throw new Error('API timeout must be between 1000 and 60000 ms');
+  if (api_base_url !== DEFAULT_PORTAL_SETTINGS.api_base_url) {
+    const parsed = new URL(api_base_url);
+    if (parsed.protocol !== 'https:' && process.env.NODE_ENV === 'production') throw new Error('API base URL must use HTTPS in production');
+    if (parsed.username || parsed.password) throw new Error('API base URL must not contain embedded credentials');
+  }
   return { query, order, per_page, thumbsize, gay, lq, format: 'json', api_base_url, api_search_path, api_details_path, api_timeout_ms, api_format: 'json' };
 }
 
-export async function GET() {
-  return NextResponse.json({ success: true, settings: await getPortalSettings() }, { headers: { 'Cache-Control': 'no-store' } });
+export async function GET(request: NextRequest) {
+  const settings = await getPortalSettings();
+  if (!isAdmin(request)) {
+    return NextResponse.json({
+      success: true,
+      settings: {
+        query: settings.query,
+        order: settings.order,
+        per_page: settings.per_page,
+        thumbsize: settings.thumbsize,
+        gay: settings.gay,
+        lq: settings.lq,
+        format: settings.format,
+      },
+    }, { headers: { 'Cache-Control': 'no-store' } });
+  }
+  return NextResponse.json({ success: true, settings }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request: NextRequest) {
