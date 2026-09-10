@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DEFAULT_PORTAL_SETTINGS, getPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
+import { DEFAULT_PORTAL_SETTINGS, getPortalSettings, getSavedPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
 
 export const dynamic = 'force-dynamic';
 const ADMIN_COOKIE = 'elovex_admin';
@@ -57,12 +57,19 @@ function validateSettings(input: Record<string, unknown>): PortalSettings {
   return { query, order, per_page, thumbsize, gay, lq, format, method, video_id, api_base_url, api_search_path, api_details_path, api_timeout_ms, api_format, items_per_page, cache_duration };
 }
 
+const ADMIN_FIELDS: (keyof PortalSettings)[] = ['query','order','per_page','thumbsize','gay','lq','format','method','video_id','api_base_url','items_per_page','cache_duration'];
+function blankAdminSettings(saved: Partial<PortalSettings>): Record<string, unknown> {
+  return Object.fromEntries(ADMIN_FIELDS.map((key) => [key, saved[key] ?? '']));
+}
+
 export async function GET(request: NextRequest) {
-  const settings = await getPortalSettings();
-  if (!isAdmin(request)) {
-    return NextResponse.json({ success: true, settings: { query: settings.query, order: settings.order, per_page: settings.per_page, thumbsize: settings.thumbsize, gay: settings.gay, lq: settings.lq, format: settings.format, method: settings.method } }, { headers: { 'Cache-Control': 'no-store' } });
+  if (isAdmin(request)) {
+    const saved = await getSavedPortalSettings();
+    return NextResponse.json({ success: true, settings: blankAdminSettings(saved) }, { headers: { 'Cache-Control': 'no-store' } });
   }
-  return NextResponse.json({ success: true, settings }, { headers: { 'Cache-Control': 'no-store' } });
+
+  const settings = await getPortalSettings();
+  return NextResponse.json({ success: true, settings: { query: settings.query, order: settings.order, per_page: settings.per_page, thumbsize: settings.thumbsize, gay: settings.gay, lq: settings.lq, format: settings.format, method: settings.method } }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request: NextRequest) {
@@ -70,7 +77,7 @@ export async function POST(request: NextRequest) {
   try {
     const settings = validateSettings(await request.json());
     await savePortalSettings(settings);
-    return NextResponse.json({ success: true, message: 'Settings saved successfully!', settings });
+    return NextResponse.json({ success: true, message: 'Settings saved successfully!', settings: blankAdminSettings(settings) });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid settings' }, { status: 400 });
   }
