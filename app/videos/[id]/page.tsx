@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Eye, ExternalLink, Star } from 'lucide-react';
-import { getPortalSettings, type PortalSettings } from '@/lib/site-settings';
+import { getPortalSettings, DEFAULT_PORTAL_SETTINGS, type PortalSettings } from '@/lib/site-settings';
 
 export const revalidate = 300;
 
@@ -28,19 +28,40 @@ function endpoint(base: string, path: string) {
   return url;
 }
 
+async function getFastSettings(): Promise<PortalSettings> {
+  const fallback = { ...DEFAULT_PORTAL_SETTINGS };
+  try {
+    return await Promise.race([
+      getPortalSettings(),
+      new Promise<PortalSettings>((resolve) => setTimeout(() => resolve(fallback), 800)),
+    ]);
+  } catch {
+    return fallback;
+  }
+}
+
 async function getVideo(id: string, settings: PortalSettings): Promise<Video | null> {
   if (!settings.api_base_url) return null;
   const url = endpoint(settings.api_base_url, settings.api_details_path);
   url.searchParams.set('id', id);
   url.searchParams.set('thumbsize', 'small');
   url.searchParams.set('format', 'json');
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
   try {
-    const response = await fetch(url, { next: { revalidate: 300 }, headers: { Accept: 'application/json' } });
+    const response = await fetch(url, {
+      next: { revalidate: 300 },
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
     if (!response.ok) return null;
     const data = (await response.json()) as ApiResponse;
     return 'videos' in data ? data.videos?.[0] || null : data as Video;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -57,7 +78,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function VideoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const settings = await getPortalSettings();
+  const settings = await getFastSettings();
   const video = await getVideo(id, settings);
 
   if (!video) {
