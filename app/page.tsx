@@ -171,9 +171,10 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   const goToPage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
-    setPage(nextPage);
-    syncListingUrl(nextPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const params = new URLSearchParams();
+    if (activeSearch) params.set('category', activeSearch);
+    const query = params.toString();
+    window.location.assign(`${nextPage === 1 ? '/' : `/p/${nextPage}`}${query ? `?${query}` : ''}`);
   };
 
   useEffect(() => {
