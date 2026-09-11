@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid video id' }, { status: 400 });
     }
 
-    const timeoutMs = typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 10000;
+    const timeoutMs = Math.max(15000, typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 15000);
     const detailsUrl = buildEndpoint(settings.api_base_url, settings.api_details_path);
     detailsUrl.searchParams.set('id', id);
     detailsUrl.searchParams.set('format', 'json');
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Video not found', videos: [] }, { status: 404 });
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      return NextResponse.json({ error: 'Video API request timed out' }, { status: 504 });
+      return NextResponse.json({ error: 'Video provider took too long to respond. Please retry.' }, { status: 504 });
     }
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to reach video API' }, { status: 502 });
   }

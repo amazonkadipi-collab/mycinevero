@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached.body, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
     }
 
-    const timeoutMs = typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 10000;
+    const timeoutMs = Math.max(15000, typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 15000);
     let result = await fetchUpstream(url, timeoutMs);
     let body: unknown = parseUpstreamBody(result.text, result.response.headers.get('content-type'));
 
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(body, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
   } catch (error) {
     const message = error instanceof Error && error.name === 'AbortError'
-      ? 'Configured video API timed out'
+      ? 'Video provider took too long to respond. Please retry.'
       : error instanceof Error
         ? error.message
         : 'Unable to reach configured video API';

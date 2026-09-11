@@ -87,7 +87,8 @@ async function fetchVideo(url: URL, timeoutMs: number): Promise<{ response: Resp
 }
 
 async function getVideo(id: string, settings: PortalSettings): Promise<Video | null> {
-  const timeoutMs = 7000;
+  // Details endpoints can be slower than search; avoid aborting valid embeds too early.
+  const timeoutMs = Math.max(15000, settings.api_timeout_ms || 15000);
   const detailsUrl = endpoint(settings.api_base_url, settings.api_details_path);
   detailsUrl.searchParams.set('id', id);
   detailsUrl.searchParams.set('thumbsize', 'small');
@@ -185,7 +186,7 @@ async function getRelated(video: Video, currentId: string, settings: PortalSetti
   const url = endpoint(settings.api_base_url, settings.api_search_path);
   for (const [key, value] of Object.entries({ query, per_page: '20', page: '1', thumbsize: 'small', order: 'most-popular', gay: String(settings.gay || 0), lq: String(settings.lq || 1), format: 'json' })) url.searchParams.set(key, value);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4500);
+  const timeout = setTimeout(() => controller.abort(), Math.max(10000, settings.api_timeout_ms || 10000));
   try {
     const response = await fetch(url, { next: { revalidate: 300 }, headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8' }, signal: controller.signal });
     if (!response.ok) return { videos: [], totalPages: 0 };
