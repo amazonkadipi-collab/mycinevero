@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
-import PageUrlSync from '@/components/PageUrlSync';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 
@@ -20,9 +19,7 @@ export const metadata: Metadata = {
     title: 'Elovex – Free Adult Videos & Trending Clips',
     description: 'Discover free adult videos, trending clips, and fresh daily entertainment on Elovex.',
   },
-  verification: {
-    google: GOOGLE_SITE_VERIFICATION,
-  },
+  verification: { google: GOOGLE_SITE_VERIFICATION },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body suppressHydrationWarning>
         <AnalyticsTracker />
-        <PageUrlSync />
         {children}
       </body>
     </html>
