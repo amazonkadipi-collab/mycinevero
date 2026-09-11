@@ -4,6 +4,7 @@ import { getPortalSettings } from '@/lib/site-settings';
 const SITE_URL = 'https://elovex.vercel.app';
 const MAX_URLS_PER_SITEMAP = 45000;
 const API_PAGE_SIZE = 1000;
+const MAX_CATEGORY_PAGES = 100;
 const REQUEST_TIMEOUT_MS = 15000;
 
 const categories = ['amateur', 'anal', 'asian', 'bbw', 'big tits', 'blonde', 'brunette', 'cosplay', 'couples', 'gay', 'lesbian', 'mature', 'milf', 'public', 'redhead', 'solo', 'threesome', 'vintage', 'webcam'];
@@ -17,24 +18,29 @@ function endpoint(base: string, path: string) {
   return url;
 }
 
-async function fetchApiPage(page: number): Promise<ApiResult> {
+async function fetchApiPage(page: number, category?: string): Promise<ApiResult> {
   const settings = await getPortalSettings();
   const url = endpoint(settings.api_base_url, settings.api_search_path);
-  url.searchParams.set('query', settings.query || 'all');
+  url.searchParams.set('query', category || settings.query || 'all');
   url.searchParams.set('page', String(page));
   url.searchParams.set('per_page', String(API_PAGE_SIZE));
   url.searchParams.set('order', settings.order || 'latest');
   url.searchParams.set('thumbsize', 'small');
-  url.searchParams.set('gay', String(settings.gay || 0));
+  url.searchParams.set('gay', String(category?.toLowerCase() === 'gay' ? 2 : settings.gay || 0));
   url.searchParams.set('lq', String(settings.lq || 1));
   url.searchParams.set('format', 'json');
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal });
+    const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8' }, signal: controller.signal });
     if (!response.ok) return {};
-    return await response.json() as ApiResult;
+    const text = (await response.text()).replace(/^\uFEFF/, '').trim();
+    try {
+      return JSON.parse(text) as ApiResult;
+    } catch {
+      return {};
+    }
   } catch {
     return {};
   } finally {
@@ -47,6 +53,16 @@ async function getTotalVideos() {
   const total = Number(first.total_count || 0);
   const pages = Number(first.total_pages || 0);
   return { total, pages: pages || (total > 0 ? Math.ceil(total / API_PAGE_SIZE) : 0) };
+}
+
+async function getCategoryPages() {
+  const results = await Promise.all(categories.map(async (category) => {
+    const first = await fetchApiPage(1, category);
+    const total = Number(first.total_count || 0);
+    const totalPages = Number(first.total_pages || 0) || (total > 0 ? Math.ceil(total / API_PAGE_SIZE) : 1);
+    return { category, totalPages: Math.min(MAX_CATEGORY_PAGES, Math.max(1, totalPages)) };
+  }));
+  return results;
 }
 
 export const revalidate = 3600;
@@ -66,7 +82,7 @@ export default async function sitemap({ id }: { id?: number }): Promise<Metadata
 
   const videos: ApiVideo[] = [];
   for (let i = 0; i < pages.length; i += 5) {
-    const batch = await Promise.all(pages.slice(i, i + 5).map(fetchApiPage));
+    const batch = await Promise.all(pages.slice(i, i + 5).map((page) => fetchApiPage(page)));
     for (const result of batch) videos.push(...(result.videos || []));
   }
 
@@ -76,15 +92,28 @@ export default async function sitemap({ id }: { id?: number }): Promise<Metadata
 
   if (sitemapId !== 0) return videoEntries;
 
-  const baseEntries: MetadataRoute.Sitemap = [
-    { url: SITE_URL, changeFrequency: 'hourly', priority: 1 },
-    ...categories.map((category) => ({
+  const categoryPages = await getCategoryPages();
+  const categoryEntries: MetadataRoute.Sitemap = [];
+  for (const { category, totalPages } of categoryPages) {
+    categoryEntries.push({
       url: `${SITE_URL}/?category=${encodeURIComponent(category)}`,
-      changeFrequency: 'hourly' as const,
+      changeFrequency: 'hourly',
       priority: 0.8,
-    })),
+    });
+    for (let page = 2; page <= totalPages; page += 1) {
+      categoryEntries.push({
+        url: `${SITE_URL}/p/${page}?category=${encodeURIComponent(category)}`,
+        changeFrequency: 'daily',
+        priority: 0.6,
+      });
+    }
+  }
+
+  return [
+    { url: SITE_URL, changeFrequency: 'hourly', priority: 1 },
+    ...categoryEntries,
+    ...videoEntries,
   ];
-  return [...baseEntries, ...videoEntries];
 }
 
 function videoEntry(video: ApiVideo): MetadataRoute.Sitemap[number] | null {
