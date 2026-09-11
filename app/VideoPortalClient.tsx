@@ -100,7 +100,9 @@ export default function VideoPortalClient(props: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState(props.initialSearch);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [preview, setPreview] = useState<{ id: string; index: number } | null>(null);
   const prefetching = useRef(new Set<string>());
+  const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
   const searchSuggestions = useMemo(() => {
@@ -242,6 +244,20 @@ export default function VideoPortalClient(props: Props) {
   }, [page, totalPages]);
 
   const thumb = (video: VideoItem) => video.default_thumb?.src || video.thumbnail || video.thumbs?.[0]?.src || video.thumb || '';
+  const previewThumbs = (video: VideoItem) => [video.default_thumb?.src, ...(video.thumbs || []).map((item) => item.src), video.thumbnail, video.thumb].filter((src, index, list): src is string => Boolean(src) && list.indexOf(src) === index).slice(0, 8);
+  const startPreview = (video: VideoItem) => {
+    const id = String(video.id || '');
+    const frames = previewThumbs(video);
+    if (!id || frames.length < 2) return;
+    if (previewTimer.current) clearInterval(previewTimer.current);
+    setPreview({ id, index: 1 });
+    previewTimer.current = setInterval(() => setPreview((current) => current?.id === id ? { id, index: (current.index + 1) % frames.length } : current), 700);
+  };
+  const stopPreview = () => {
+    if (previewTimer.current) clearInterval(previewTimer.current);
+    previewTimer.current = null;
+    setPreview(null);
+  };
 
   return <div className="min-h-screen bg-white text-zinc-900">
     <header data-search-open={searchOpen} className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
@@ -257,8 +273,8 @@ export default function VideoPortalClient(props: Props) {
       {loading && <div className="mb-4 text-sm text-zinc-500">Loading videos…</div>}
       <div className="relative min-h-[240px]">
         {videos.length > 0 ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.slice(0, 50).map((video, index) => {
-          const id = String(video.id || '').trim(); const image = thumb(video); const enriched = video as VideoItem & { uploader?: string; author?: string; quality?: string; has_subtitles?: boolean }; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Adult video'} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw" className="h-full w-full object-cover" />}<div className="absolute bottom-2 left-2 flex gap-1"><span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{enriched.quality || 'HD'}</span>{enriched.has_subtitles && <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">CC</span>}</div></div><div className="px-2.5 pt-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5">{video.title || 'Untitled video'}</h2></div><div className="flex items-center gap-1 px-2.5 pb-2.5 pt-1 text-xs text-zinc-500"><span className="truncate">{enriched.uploader || enriched.author || 'Eporner provider'}</span><span aria-hidden="true">-</span><span className="shrink-0">{typeof video.views === 'number' ? video.views.toLocaleString() : '—'} Views</span><span aria-hidden="true">-</span><span className="shrink-0">{video.length_min || video.duration || 'Watch'}</span></div></>;
-          return id ? <Link key={`${id}-${index}`} href={`/videos/${encodeURIComponent(id)}`} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">{card}</Link> : <div key={index} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">{card}</div>;
+          const id = String(video.id || '').trim(); const image = thumb(video); const frames = previewThumbs(video); const activeImage = preview?.id === id ? frames[preview.index] || image : image; const enriched = video as VideoItem & { uploader?: string; author?: string; quality?: string; has_subtitles?: boolean }; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={activeImage} alt={video.title || 'Adult video'} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw" className="h-full w-full object-cover" />}<div className="absolute bottom-2 left-2 flex gap-1"><span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{enriched.quality || 'HD'}</span>{enriched.has_subtitles && <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">CC</span>}</div></div><div className="px-2.5 pt-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5">{video.title || 'Untitled video'}</h2></div><div className="flex items-center gap-1 px-2.5 pb-2.5 pt-1 text-xs text-zinc-500"><span className="truncate">{enriched.uploader || enriched.author || 'Eporner provider'}</span><span aria-hidden="true">-</span><span className="shrink-0">{typeof video.views === 'number' ? video.views.toLocaleString() : '—'} Views</span><span aria-hidden="true">-</span><span className="shrink-0">{video.length_min || video.duration || 'Watch'}</span></div></>;
+          return id ? <Link key={`${id}-${index}`} href={`/videos/${encodeURIComponent(id)}`} onPointerEnter={() => startPreview(video)} onPointerLeave={stopPreview} onTouchStart={() => startPreview(video)} onTouchEnd={stopPreview} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">{card}</Link> : <div key={index} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">{card}</div>;
         })}</div> : !loading && <div className="rounded-xl border border-zinc-200 p-8 text-center text-sm text-zinc-500">No videos are available right now.</div>}
       </div>
 
