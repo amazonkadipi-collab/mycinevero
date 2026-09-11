@@ -63,12 +63,12 @@ function getTotalPages(data: any, totalCount: number, perPage: number): number {
   return value ? Math.floor(value) : Math.max(1, Math.ceil(totalCount / Math.max(1, perPage)));
 }
 
-export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: number }) {
+export default function VideoPortalPage({ initialPage = 1, initialOrder = 'latest' }: { initialPage?: number; initialOrder?: string }) {
   const safeInitialPage = Math.max(1, Number(initialPage) || 1);
   const [settings, setSettings] = useState(DEFAULTS);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
-  const [order, setOrder] = useState('latest');
+  const [order, setOrder] = useState(initialOrder);
   const [page, setPage] = useState(safeInitialPage);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -156,14 +156,14 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
   const goToPage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
     setPage(nextPage);
-    const path = nextPage === 1 ? '/' : `/p/${nextPage}`;
+    const path = nextPage === 1 ? '/' : `/p${nextPage}`;
     window.history.pushState({ page: nextPage }, '', path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
     const onPopState = () => {
-      const match = window.location.pathname.match(/^\/p\/(\d+)\/?$/);
+      const match = window.location.pathname.match(/^\/p(\d+)\/?$/);
       setPage(match ? Math.max(1, Number(match[1])) : 1);
     };
     window.addEventListener('popstate', onPopState);
