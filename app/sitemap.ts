@@ -7,8 +7,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: base, lastModified: now, changeFrequency: 'hourly', priority: 1 },
     ...categories.map((category) => ({ url: `${base}/?category=${category}`, lastModified: now, changeFrequency: 'hourly' as const, priority: 0.8 })),
-    { url: `${base}/?order=most-popular`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
-    { url: `${base}/?order=top-weekly`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
-    { url: `${base}/?order=top-rated`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
   ];
 }

@@ -21,7 +21,6 @@ type PortalSettings = { query: string; order: string; per_page: number; thumbsiz
 type VideoCache = { videos: VideoItem[]; totalCount: number; totalPages: number; savedAt: number };
 
 const DEFAULTS: PortalSettings = { query: 'all', order: 'latest', per_page: 50, thumbsize: 'small', gay: 0, lq: 1 };
-const NAV = [['latest', 'Latest'], ['most-popular', 'Most Popular'], ['top-weekly', 'Trending'], ['top-rated', 'Top Rated']];
 const CATEGORY_NAV = [
   ['amateur', 'Amateur'], ['anal', 'Anal'], ['asian', 'Asian'], ['bbw', 'BBW'], ['big tits', 'Big Tits'],
   ['blonde', 'Blonde'], ['brunette', 'Brunette'], ['cosplay', 'Cosplay'], ['couples', 'Couples'], ['gay', 'Gay'],
@@ -157,21 +156,19 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   useEffect(() => { if (page > totalPages && totalPages >= 1) setPage(totalPages); }, [page, totalPages]);
 
-  const submitSearch = (event: FormEvent) => { event.preventDefault(); const nextSearch = searchQuery.trim(); setPage(1); setActiveSearch(nextSearch); syncListingUrl(1, order, nextSearch); };
-  const syncListingUrl = (nextPage: number, nextOrder = order, nextSearch = activeSearch) => {
+  const submitSearch = (event: FormEvent) => { event.preventDefault(); const nextSearch = searchQuery.trim(); setPage(1); setActiveSearch(nextSearch); syncListingUrl(1, nextSearch); };
+  const syncListingUrl = (nextPage: number, nextSearch = activeSearch) => {
     const params = new URLSearchParams();
     if (nextSearch) params.set('category', nextSearch);
-    if (nextOrder !== 'latest') params.set('order', nextOrder);
     const query = params.toString();
     const path = nextPage === 1 ? '/' : `/p${nextPage}`;
-    window.history.pushState({ page: nextPage, order: nextOrder, search: nextSearch }, '', `${path}${query ? `?${query}` : ''}`);
+    window.history.pushState({ page: nextPage, search: nextSearch }, '', `${path}${query ? `?${query}` : ''}`);
   };
-  const changeOrder = (nextOrder: string) => { if (nextOrder === order) return; setOrder(nextOrder); setPage(1); syncListingUrl(1, nextOrder, activeSearch); };
   const changeCategory = (category: string) => {
     setSearchQuery(category);
     setActiveSearch(category);
     setPage(1);
-    syncListingUrl(1, order, category);
+    syncListingUrl(1, category);
     setSettings((current) => ({ ...current, gay: category === 'gay' ? 2 : 0 }));
   };
 
@@ -189,7 +186,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
       setPage(match ? Math.max(1, Number(match[1])) : 1);
       setActiveSearch(params.get('category') || '');
       setSearchQuery(params.get('category') || '');
-      setOrder(params.get('order') || 'latest');
+      setOrder('latest');
     };
     onPopState();
     window.addEventListener('popstate', onPopState);
@@ -212,7 +209,6 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
           <form onSubmit={submitSearch} className="mx-auto flex h-9 w-full max-w-xl overflow-hidden rounded-lg border border-zinc-300 bg-zinc-50"><Search className="my-2 ml-3 h-4 w-4 shrink-0 text-zinc-400" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search videos..." className="min-w-0 flex-1 bg-transparent px-2.5 text-sm outline-none placeholder:text-zinc-400" />{searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="px-2 text-zinc-400"><X className="h-4 w-4" /></button>}<button className="bg-red-600 px-4 text-sm font-medium text-white">Search</button></form>
           <Link href="/admin" className="hidden px-2 py-1.5 text-xs text-zinc-500 sm:block">Admin</Link>
         </div>
-        <nav className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 pb-2 lg:px-6">{NAV.map(([value, label]) => <button key={value} onClick={() => changeOrder(value)} className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm ${order === value ? 'bg-zinc-900 font-medium text-white' : 'text-zinc-500'}`}>{label}</button>)}</nav>
         <nav aria-label="Video categories" className="mx-auto flex max-w-[1400px] gap-2 overflow-x-auto px-4 pb-3 lg:px-6">{CATEGORY_NAV.map(([value, label]) => <button key={value} onClick={() => changeCategory(value)} className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs transition ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-red-300 hover:text-red-600'}`}>{label}</button>)}</nav>
       </header>
       <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
