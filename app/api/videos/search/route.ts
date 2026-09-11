@@ -15,6 +15,18 @@ function buildEndpoint(base: string, path: string) {
   return url;
 }
 
+function parseXmlVideos(xml: string) {
+  const videos = [...xml.matchAll(/<video>([\s\S]*?)<\/video>/gi)].map((match) => {
+    const block = match[1];
+    const get = (name: string) => block.match(new RegExp(`<${name}>([\\s\\S]*?)<\\/${name}>`, 'i'))?.[1]?.trim();
+    const id = get('id');
+    if (!id) return null;
+    return { id, title: get('title'), views: Number(get('views') || 0), rate: get('rate'), length_sec: Number(get('length_sec') || 0), length_min: get('length_min'), url: get('url'), embed: get('embed'), keywords: get('keywords') };
+  }).filter(Boolean);
+  const value = (name: string) => Number(xml.match(new RegExp(`<${name}>([\\d.]+)<\\/${name}>`, 'i'))?.[1] || 0);
+  return { count: value('count'), start: value('start'), per_page: value('per_page'), page: value('page'), total_count: value('total_count'), total_pages: value('total_pages'), videos };
+}
+
 export async function GET(request: NextRequest) {
   const settings = await getPortalSettings();
   if (!settings.api_base_url || settings.api_base_url === 'SAMPLE_API_BASE_URL') {
@@ -69,7 +81,7 @@ export async function GET(request: NextRequest) {
       });
       const text = await response.text();
       let body: unknown;
-      try { body = JSON.parse(text); } catch { body = null; }
+      try { body = JSON.parse(text); } catch { body = response.headers.get('content-type')?.includes('xml') || text.trim().startsWith('<') ? parseXmlVideos(text) : null; }
       if (!response.ok) {
         return NextResponse.json(
           { error: `Configured video API returned HTTP ${response.status}`, videos: [], total_count: 0, total_pages: 0 },
@@ -78,7 +90,7 @@ export async function GET(request: NextRequest) {
       }
       if (body === null) {
         return NextResponse.json(
-          { error: 'Configured video API did not return valid JSON', videos: [], total_count: 0, total_pages: 0 },
+          { error: 'Configured video API returned an unsupported response format', videos: [], total_count: 0, total_pages: 0 },
           { status: 502 },
         );
       }

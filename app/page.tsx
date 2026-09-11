@@ -159,7 +159,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
     const params = new URLSearchParams();
     if (nextSearch) params.set('category', nextSearch);
     const query = params.toString();
-    const path = nextPage === 1 ? '/' : `/p${nextPage}`;
+    const path = nextPage === 1 ? '/' : `/p/${nextPage}`;
     window.history.pushState({ page: nextPage, search: nextSearch }, '', `${path}${query ? `?${query}` : ''}`);
   };
   const changeCategory = (category: string) => {
@@ -178,7 +178,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   useEffect(() => {
     const onPopState = () => {
-      const match = window.location.pathname.match(/^\/p(\d+)\/?$/);
+      const match = window.location.pathname.match(/^\/p\/(\d+)\/?$/);
       const params = new URLSearchParams(window.location.search);
       setPage(match ? Math.max(1, Number(match[1])) : 1);
       setActiveSearch(params.get('category') || '');
