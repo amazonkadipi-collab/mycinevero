@@ -55,7 +55,11 @@ export async function getPortalSettings(): Promise<PortalSettings> {
     const response = await supabaseRequest('site_settings?select=key,value&key=like.elovex_*');
     if (!response.ok) throw new Error(`Supabase returned HTTP ${response.status}`);
     const rows = (await response.json()) as { key: string; value: string }[];
-    return { ...DEFAULT_PORTAL_SETTINGS, ...parseRows(rows) } as PortalSettings;
+    const saved = parseRows(rows);
+    for (const key of Object.keys(saved) as (keyof PortalSettings)[]) {
+      if (saved[key] === '') delete saved[key];
+    }
+    return { ...DEFAULT_PORTAL_SETTINGS, ...saved } as PortalSettings;
   } catch {
     return { ...DEFAULT_PORTAL_SETTINGS };
   }
