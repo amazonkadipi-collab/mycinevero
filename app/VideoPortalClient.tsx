@@ -185,7 +185,7 @@ export default function VideoPortalClient(props: Props) {
   const changeSort = (order: string) => {
     setSortOrder(order); setPage(1); setError('');
     const params = new URLSearchParams(window.location.search);
-    if (activeSearch) params.set('category', activeSearch);
+    if (activeSearch) params.set(params.has('k') ? 'k' : 'category', activeSearch);
     params.set('order', order);
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
   };
@@ -194,7 +194,7 @@ export default function VideoPortalClient(props: Props) {
     if (key === 'sort') { setOpenFilter(null); changeSort(value); return; }
     setFilterValues((current) => ({ ...current, [key]: value }));
     const params = new URLSearchParams(window.location.search);
-    if (activeSearch) params.set('category', activeSearch);
+    if (activeSearch) params.set(params.has('k') ? 'k' : 'category', activeSearch);
     params.set(key, value);
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
     setOpenFilter(null);
@@ -209,7 +209,7 @@ export default function VideoPortalClient(props: Props) {
     event.preventDefault();
     const query = searchDraft.trim();
     setMenuOpen(false); setSearchOpen(false); setSuggestionsOpen(false); setActiveSearch(query); setPage(1); setError('');
-    window.history.pushState({}, '', query ? `/?category=${encodeURIComponent(query)}` : '/');
+    window.history.pushState({}, '', query ? `/?k=${encodeURIComponent(query)}` : '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
@@ -218,7 +218,7 @@ export default function VideoPortalClient(props: Props) {
       const match = window.location.pathname.match(/^\/p\/(\d+)\/?$/);
       const params = new URLSearchParams(window.location.search);
       setPage(match ? Math.max(1, Number(match[1])) : 1);
-      setActiveSearch(params.get('category') || '');
+      setActiveSearch(params.get('k') || params.get('category') || '');
       setSortOrder(params.get('order') || props.initialOrder || 'latest');
       setFilterValues({ date: params.get('date') || 'all', duration: params.get('duration') || 'all', quality: params.get('quality') || 'all', viewed: params.get('viewed') || 'all' });
     };
@@ -229,7 +229,7 @@ export default function VideoPortalClient(props: Props) {
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || next === page) return;
     const params = new URLSearchParams();
-    if (activeSearch) params.set('category', activeSearch);
+    if (activeSearch) params.set(window.location.search.includes('k=') ? 'k' : 'category', activeSearch);
     if (sortOrder) params.set('order', sortOrder);
     const href = `${next === 1 ? '/' : `/p/${next}`}${params.toString() ? `?${params.toString()}` : ''}`;
     window.location.assign(href);
