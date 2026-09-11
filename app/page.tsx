@@ -27,7 +27,7 @@ const CATEGORY_NAV = [
   ['lesbian', 'Lesbian'], ['mature', 'Mature'], ['milf', 'MILF'], ['public', 'Public'], ['redhead', 'Redhead'],
   ['solo', 'Solo'], ['threesome', 'Threesome'], ['vintage', 'Vintage'], ['webcam', 'Webcam'],
 ];
-const CACHE_PREFIX = 'elovex:videos:v9:';
+const CACHE_PREFIX = 'elovex:videos:v10:';
 const CACHE_TTL = 5 * 60 * 1000;
 
 function readVideoCache(key: string): VideoCache | null {
@@ -105,7 +105,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
     const key = JSON.stringify({ q: effectiveQuery, page: targetPage, per_page: perPage, order, thumbsize, gay: gayFilter, lq: settings.lq ?? 1 });
     if (readVideoCache(key) || prefetching.current.has(key)) return;
     prefetching.current.add(key);
-    fetch(buildRequest(targetPage), { cache: 'force-cache', headers: { Accept: 'application/json' } })
+    fetch(buildRequest(targetPage), { cache: 'no-store', headers: { Accept: 'application/json' } })
       .then(async (response) => { if (!response.ok) return null; return response.json(); })
       .then((data) => {
         if (!data) return;
@@ -130,7 +130,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
       setLoading(true);
     }
 
-    fetch(buildRequest(page), { signal: controller.signal, cache: 'force-cache', headers: { Accept: 'application/json' } })
+    fetch(buildRequest(page), { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json' } })
       .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data?.error || 'Unable to load videos'); return data; })
       .then((data) => {
         if (!active) return;
