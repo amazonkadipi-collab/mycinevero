@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   try {
     const url = buildEndpoint(settings.api_base_url, settings.api_search_path);
     const input = request.nextUrl.searchParams;
-    const query = (input.get('query') || input.get('q') || settings.query || 'all').trim().slice(0, 200) || 'all';
+    const category = (input.get('category') || '').trim().slice(0, 80);
+    const query = (category || input.get('query') || input.get('q') || settings.query || 'all').trim().slice(0, 200) || 'all';
     const page = Number(input.get('page') || 1);
     const perPage = Number(input.get('per_page') || settings.per_page);
     const order = input.get('order') || settings.order;

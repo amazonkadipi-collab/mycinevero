@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Clock, Eye, Play, Search, Star, X } from 'lucide-react';
+import { AlertCircle, Clock, Eye, Play, Star } from 'lucide-react';
 
 interface VideoItem {
   id?: string | number;
@@ -71,7 +71,6 @@ function getTotalPages(data: any, totalCount: number, perPage: number): number {
 export default function VideoPortalPage({ initialPage = 1, initialOrder = 'latest', initialSearch = '' }: { initialPage?: number; initialOrder?: string; initialSearch?: string }) {
   const safeInitialPage = Math.max(1, Number(initialPage) || 1);
   const [settings, setSettings] = useState(DEFAULTS);
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [activeSearch, setActiveSearch] = useState(initialSearch);
   const [order, setOrder] = useState(initialOrder);
   const [page, setPage] = useState(safeInitialPage);
@@ -96,7 +95,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
   const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize, gay: gayFilter, lq: settings.lq ?? 1 }), [effectiveQuery, page, order, gayFilter, settings.lq]);
 
   const buildRequest = (targetPage: number) => {
-    const params = new URLSearchParams({ q: effectiveQuery, page: String(targetPage), per_page: String(perPage), order, thumbsize, gay: String(gayFilter), lq: String(settings.lq ?? 1), format: 'json' });
+    const params = new URLSearchParams({ category: effectiveQuery, page: String(targetPage), per_page: String(perPage), order, thumbsize, gay: String(gayFilter), lq: String(settings.lq ?? 1), format: 'json' });
     return `/api/videos/search?${params.toString()}`;
   };
 
@@ -156,7 +155,6 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   useEffect(() => { if (page > totalPages && totalPages >= 1) setPage(totalPages); }, [page, totalPages]);
 
-  const submitSearch = (event: FormEvent) => { event.preventDefault(); const nextSearch = searchQuery.trim(); setPage(1); setActiveSearch(nextSearch); syncListingUrl(1, nextSearch); };
   const syncListingUrl = (nextPage: number, nextSearch = activeSearch) => {
     const params = new URLSearchParams();
     if (nextSearch) params.set('category', nextSearch);
@@ -165,7 +163,6 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
     window.history.pushState({ page: nextPage, search: nextSearch }, '', `${path}${query ? `?${query}` : ''}`);
   };
   const changeCategory = (category: string) => {
-    setSearchQuery(category);
     setActiveSearch(category);
     setPage(1);
     syncListingUrl(1, category);
@@ -185,7 +182,6 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
       const params = new URLSearchParams(window.location.search);
       setPage(match ? Math.max(1, Number(match[1])) : 1);
       setActiveSearch(params.get('category') || '');
-      setSearchQuery(params.get('category') || '');
       setOrder('latest');
     };
     onPopState();
@@ -204,15 +200,14 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
   return (
     <div className="min-h-screen bg-white text-zinc-900">
       <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 lg:px-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-zinc-900"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600"><Play className="h-3.5 w-3.5 fill-white text-white" /></span><span className="hidden sm:block">ELO<span className="text-red-600">VEX</span></span></Link>
-          <form onSubmit={submitSearch} className="mx-auto flex h-9 w-full max-w-xl overflow-hidden rounded-lg border border-zinc-300 bg-zinc-50"><Search className="my-2 ml-3 h-4 w-4 shrink-0 text-zinc-400" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search videos..." className="min-w-0 flex-1 bg-transparent px-2.5 text-sm outline-none placeholder:text-zinc-400" />{searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="px-2 text-zinc-400"><X className="h-4 w-4" /></button>}<button className="bg-red-600 px-4 text-sm font-medium text-white">Search</button></form>
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 lg:px-6">
+          <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-zinc-900"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600"><Play className="h-3.5 w-3.5 fill-white text-white" /></span>ELO<span className="text-red-600">VEX</span></Link>
           <Link href="/admin" className="hidden px-2 py-1.5 text-xs text-zinc-500 sm:block">Admin</Link>
         </div>
         <nav aria-label="Video categories" className="mx-auto flex max-w-[1400px] gap-2 overflow-x-auto px-4 pb-3 lg:px-6">{CATEGORY_NAV.map(([value, label]) => <button key={value} onClick={() => changeCategory(value)} className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs transition ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-red-300 hover:text-red-600'}`}>{label}</button>)}</nav>
       </header>
       <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
-        <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{activeSearch ? `Results for “${activeSearch}”` : 'Discover trending videos'}</h1><p className="mt-1 text-sm text-zinc-500">Fresh videos and popular content.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
+        <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} videos` : 'Choose a category'}</h1><p className="mt-1 text-sm text-zinc-500">Browse videos by category.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
         {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
         <div className="relative min-h-[240px]">
           {videos.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.slice(0, 50).map((video, index) => { const image = thumbnail(video); const videoId = video.id; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Video'} loading={index < 8 ? 'eager' : 'lazy'} fetchPriority={index < 8 ? 'high' : 'low'} decoding="async" className="h-full w-full object-cover" />}<span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration ? <><Clock className="h-3 w-3" />{video.length_min || video.duration}</> : 'Watch'}</span></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-zinc-800">{video.title || 'Untitled video'}</h2><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{video.rate ?? '—'}</span></div></div></>; return videoId ? <a key={videoId} href={`/videos/${encodeURIComponent(String(videoId))}`} className="group overflow-hidden rounded-lg border border-zinc-200 bg-white">{card}</a> : <div key={`${page}-${index}`} className="overflow-hidden rounded-lg border border-zinc-200 bg-white">{card}</div>; })}</div>}
