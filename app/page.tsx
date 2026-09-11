@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import VideoPortalClient from './VideoPortalClient';
-import { VIDEO_CATEGORIES } from '@/lib/categories';
 import { loadVideoListing } from '@/lib/video-listing';
 
 const SITE_URL = 'https://elovex.vercel.app';
@@ -23,9 +21,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Elovex', url: SITE_URL, description: 'Free adult video discovery and watch pages.', potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/search?q={search_term_string}`, 'query-input': 'required name=search_term_string' } }) }} />
     {itemList.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'ItemList', itemListElement: itemList }) }} />}
-    <section className="mx-auto max-w-[1400px] px-4 pt-4 lg:px-6" aria-label="Browse categories">
-      <nav className="flex flex-wrap gap-2"><Link href="/" className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700">Best Videos</Link>{VIDEO_CATEGORIES.map(([value, label]) => <Link key={value} href={`/category/${encodeURIComponent(value)}`} className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-700 hover:border-red-300 hover:text-red-600">{label}</Link>)}</nav>
-    </section>
     <VideoPortalClient initialPage={1} initialSearch={category} initialOrder="latest" initialVideos={listing.videos} initialTotalCount={listing.totalCount} initialTotalPages={listing.totalPages} initialError={listing.error} />
   </>;
 }
