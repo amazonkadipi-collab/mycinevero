@@ -10,6 +10,8 @@ type Video = {
   views?: number;
   rate?: string | number;
   length_min?: string;
+  length_sec?: number;
+  added?: string;
   embed?: string;
   url?: string;
   default_thumb?: { src?: string };
@@ -65,8 +67,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const video = await getVideo(id);
   const title = video?.title || 'Watch Video';
   const description = video?.keywords
-    ? `${title}. Watch the video and discover related content on Video Portal.`
-    : `Watch ${title} online and discover related videos on Video Portal.`;
+    ? `${title}. Watch this video on Elovex and discover related adult videos, trending clips, and popular searches.`
+    : `Watch ${title} online on Elovex and discover related adult videos and trending clips.`;
   const image = video ? thumbnail(video) : '';
   return {
     title: `${title} | Elovex`,
@@ -85,17 +87,25 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const related = await getRelated(video);
   const title = video.title || 'Untitled video';
   const embed = video.embed || '';
+  const videoSchema = {
+    '@context': 'https://schema.org', '@type': 'VideoObject', name: title,
+    description: video.keywords || `Watch ${title} on Elovex.`, thumbnailUrl: thumbnail(video) ? [thumbnail(video)] : undefined,
+    embedUrl: embed || undefined, url: `https://elovex.vercel.app/videos/${id}`,
+    duration: video.length_sec ? `PT${video.length_sec}S` : undefined, uploadDate: video.added || undefined,
+    interactionStatistic: video.views ? { '@type': 'InteractionCounter', interactionType: 'https://schema.org/WatchAction', userInteractionCount: video.views } : undefined,
+  };
 
   return (
     <main className="min-h-screen bg-zinc-900 text-gray-200">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }} />
       <header className="border-b border-red-950/80 bg-red-800 text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4"><Link href="/" className="flex items-center gap-2 text-sm text-red-100 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to videos</Link><div className="text-sm font-black tracking-wider">ELO<span className="ml-1 text-red-400">VEX</span></div></div>
       </header>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
           <article>
-            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-black shadow-xl"><div className="aspect-video">{embed ? <iframe src={embed} className="h-full w-full border-0" allow="autoplay; fullscreen" allowFullScreen title={title} /> : <div className="flex h-full items-center justify-center text-zinc-500">Player unavailable</div>}</div></div>
-            <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950 p-5"><h1 className="text-xl font-bold text-white sm:text-2xl">{title}</h1><div className="mt-4 flex flex-wrap gap-4 text-sm text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-4 w-4" />{video.views?.toLocaleString() || '—'} views</span><span className="flex items-center gap-1 text-amber-400"><Star className="h-4 w-4 fill-current" />{video.rate || '—'}</span>{video.length_min && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{video.length_min}</span>}</div>{video.keywords && <p className="mt-5 border-t border-zinc-800 pt-4 text-sm leading-6 text-zinc-400">{video.keywords}</p>}<div className="mt-5 flex gap-3"><Link href="/" className="rounded-lg bg-zinc-800 px-4 py-2 text-sm hover:bg-zinc-700">More videos</Link>{video.url && <a href={video.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-500">Source <ExternalLink className="h-3.5 w-3.5" /></a>}</div></div>
+            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-black shadow-xl"><div className="aspect-video">{embed ? <iframe src={embed} className="h-full w-full border-0" allow="autoplay; fullscreen; encrypted-media" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" title={title} /> : <div className="flex h-full items-center justify-center text-zinc-500">Player unavailable</div>}</div></div>
+            <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950 p-5"><h1 className="text-xl font-bold text-white sm:text-2xl">{title}</h1><div className="mt-4 flex flex-wrap gap-4 text-sm text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-4 w-4" />{video.views?.toLocaleString() || '—'} views</span><span className="flex items-center gap-1 text-amber-400"><Star className="h-4 w-4 fill-current" />{video.rate || '—'}</span>{video.length_min && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{video.length_min}</span>}</div>{video.keywords && <p className="mt-5 border-t border-zinc-800 pt-4 text-sm leading-6 text-zinc-400">{video.keywords}</p>}<div className="mt-5 flex flex-wrap gap-3"><Link href="/" className="rounded-lg bg-zinc-800 px-4 py-2 text-sm hover:bg-zinc-700">More videos</Link>{embed && <a href={embed} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5">Open player <ExternalLink className="h-3.5 w-3.5" /></a>}{video.url && <a href={video.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-500">Source <ExternalLink className="h-3.5 w-3.5" /></a>}</div></div>
           </article>
           <aside><h2 className="mb-4 text-lg font-bold text-white">Related videos</h2><div className="space-y-3">{related.map((item) => <Link key={item.id} href={`/videos/${item.id}`} className="group flex gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-2 hover:border-red-700/60"><div className="relative h-20 w-32 shrink-0 overflow-hidden rounded bg-black">{thumbnail(item) ? <img src={thumbnail(item)} alt={item.title || 'Related video'} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" /> : <Play className="m-8 h-5 w-5 text-zinc-600" />}</div><div className="min-w-0"><h3 className="line-clamp-2 text-sm font-semibold text-white group-hover:text-red-300">{item.title || 'Untitled video'}</h3><p className="mt-2 text-xs text-zinc-500">{item.views?.toLocaleString() || '—'} views</p></div></Link>)}</div></aside>
         </div>
