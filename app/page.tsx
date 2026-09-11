@@ -22,6 +22,12 @@ type VideoCache = { videos: VideoItem[]; totalCount: number; totalPages: number;
 
 const DEFAULTS: PortalSettings = { query: 'all', order: 'latest', per_page: 50, thumbsize: 'small', gay: 0, lq: 1 };
 const NAV = [['latest', 'Latest'], ['most-popular', 'Most Popular'], ['top-weekly', 'Trending'], ['top-rated', 'Top Rated']];
+const CATEGORY_NAV = [
+  ['amateur', 'Amateur'], ['anal', 'Anal'], ['asian', 'Asian'], ['bbw', 'BBW'], ['big tits', 'Big Tits'],
+  ['blonde', 'Blonde'], ['brunette', 'Brunette'], ['cosplay', 'Cosplay'], ['couples', 'Couples'], ['gay', 'Gay'],
+  ['lesbian', 'Lesbian'], ['mature', 'Mature'], ['milf', 'MILF'], ['public', 'Public'], ['redhead', 'Redhead'],
+  ['solo', 'Solo'], ['threesome', 'Threesome'], ['vintage', 'Vintage'], ['webcam', 'Webcam'],
+];
 const CACHE_PREFIX = 'elovex:videos:v9:';
 const CACHE_TTL = 5 * 60 * 1000;
 
@@ -152,6 +158,12 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   const submitSearch = (event: FormEvent) => { event.preventDefault(); setPage(1); setActiveSearch(searchQuery.trim()); };
   const changeOrder = (nextOrder: string) => { if (nextOrder === order) return; setOrder(nextOrder); setPage(1); };
+  const changeCategory = (category: string) => {
+    setSearchQuery(category);
+    setActiveSearch(category);
+    setPage(1);
+    setSettings((current) => ({ ...current, gay: category === 'gay' ? 2 : 0 }));
+  };
 
   const goToPage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
@@ -187,6 +199,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
           <Link href="/admin" className="hidden px-2 py-1.5 text-xs text-zinc-500 sm:block">Admin</Link>
         </div>
         <nav className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 pb-2 lg:px-6">{NAV.map(([value, label]) => <button key={value} onClick={() => changeOrder(value)} className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm ${order === value ? 'bg-zinc-900 font-medium text-white' : 'text-zinc-500'}`}>{label}</button>)}</nav>
+        <nav aria-label="Video categories" className="mx-auto flex max-w-[1400px] gap-2 overflow-x-auto px-4 pb-3 lg:px-6">{CATEGORY_NAV.map(([value, label]) => <button key={value} onClick={() => changeCategory(value)} className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs transition ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-red-300 hover:text-red-600'}`}>{label}</button>)}</nav>
       </header>
       <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
         <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{activeSearch ? `Results for “${activeSearch}”` : 'Discover trending videos'}</h1><p className="mt-1 text-sm text-zinc-500">Fresh videos and popular content.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
