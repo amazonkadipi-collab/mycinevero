@@ -12,8 +12,9 @@ type Settings = {
 };
 
 const EMPTY: Settings = {
-  query: '', order: '', per_page: '', thumbsize: '', gay: '', lq: '', format: '', method: '', video_id: '', api_base_url: '',
-  api_search_path: '', api_details_path: '', api_timeout_ms: '', api_format: '', items_per_page: '', cache_duration: '',
+  query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1, format: 'json', method: 'search', video_id: '',
+  api_base_url: 'https://www.eporner.com/api/v2', api_search_path: '/video/search', api_details_path: '/video/id',
+  api_timeout_ms: 10000, api_format: 'json', items_per_page: 24, cache_duration: 0,
 };
 const ORDERS = ['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly'];
 const PAGES = [12, 24, 48, 96];

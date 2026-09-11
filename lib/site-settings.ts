@@ -22,7 +22,7 @@ export type PortalSettings = {
 
 export const DEFAULT_PORTAL_SETTINGS: PortalSettings = {
   query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1, format: 'json',
-  method: 'search', video_id: '', api_base_url: 'SAMPLE_API_BASE_URL', api_search_path: '/search', api_details_path: '/details',
+  method: 'search', video_id: '', api_base_url: 'https://www.eporner.com/api/v2', api_search_path: '/video/search', api_details_path: '/video/id',
   api_timeout_ms: 10000, api_format: 'json', items_per_page: 24, cache_duration: 0,
 };
 
