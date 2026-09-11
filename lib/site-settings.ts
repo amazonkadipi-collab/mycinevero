@@ -59,7 +59,16 @@ export async function getPortalSettings(): Promise<PortalSettings> {
     for (const key of Object.keys(saved) as (keyof PortalSettings)[]) {
       if (saved[key] === '') delete saved[key];
     }
-    return { ...DEFAULT_PORTAL_SETTINGS, ...saved } as PortalSettings;
+    const merged = { ...DEFAULT_PORTAL_SETTINGS, ...saved } as PortalSettings;
+    // Older deployments stored the placeholder/sample provider settings. Treat
+    // those values as unset so the Eporner defaults remain usable in production.
+    if (merged.api_base_url === 'SAMPLE_API_BASE_URL') {
+      merged.api_base_url = DEFAULT_PORTAL_SETTINGS.api_base_url;
+      merged.api_search_path = DEFAULT_PORTAL_SETTINGS.api_search_path;
+      merged.api_details_path = DEFAULT_PORTAL_SETTINGS.api_details_path;
+      merged.api_format = DEFAULT_PORTAL_SETTINGS.api_format;
+    }
+    return merged;
   } catch {
     return { ...DEFAULT_PORTAL_SETTINGS };
   }
