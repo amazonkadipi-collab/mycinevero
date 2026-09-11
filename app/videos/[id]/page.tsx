@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Eye, ExternalLink, Play, Star } from 'lucide-react';
+import { ArrowLeft, Clock, Eye, ExternalLink, Star } from 'lucide-react';
 import { getPortalSettings, type PortalSettings } from '@/lib/site-settings';
+
+export const revalidate = 300;
 
 type Video = {
   id?: string;
@@ -30,12 +32,16 @@ async function getVideo(id: string, settings: PortalSettings): Promise<Video | n
   if (!settings.api_base_url) return null;
   const url = endpoint(settings.api_base_url, settings.api_details_path);
   url.searchParams.set('id', id);
-  url.searchParams.set('thumbsize', 'big');
+  url.searchParams.set('thumbsize', 'small');
   url.searchParams.set('format', 'json');
-  const response = await fetch(url, { next: { revalidate: 300 } });
-  if (!response.ok) return null;
-  const data = (await response.json()) as ApiResponse;
-  return 'videos' in data ? data.videos?.[0] || null : data as Video;
+  try {
+    const response = await fetch(url, { next: { revalidate: 300 }, headers: { Accept: 'application/json' } });
+    if (!response.ok) return null;
+    const data = (await response.json()) as ApiResponse;
+    return 'videos' in data ? data.videos?.[0] || null : data as Video;
+  } catch {
+    return null;
+  }
 }
 
 function thumbnail(video: Video) {
@@ -51,9 +57,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function VideoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-
-  // Fetch settings only once. Previously the page fetched settings twice and also
-  // fetched the same video once for metadata before fetching it again for the page.
   const settings = await getPortalSettings();
   const video = await getVideo(id, settings);
 
