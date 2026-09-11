@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'Discover free adult videos, trending clips, popular searches, and fresh daily entertainment on Elovex. Fast browsing, related videos, and dedicated watch pages.',
   keywords: ['Elovex', 'adult video discovery', 'age-restricted video search', 'video categories', 'watch pages'],
   applicationName: 'Elovex',
-  alternates: { canonical: '/', languages: { en: '/', fr: '/fr', 'x-default': '/' } },
+  alternates: { canonical: '/', languages: { en: '/', 'x-default': '/' } },
   robots: { index: true, follow: true, 'max-image-preview': 'large' },
   other: { rating: 'adult', 'rating:content': 'adult' },
   openGraph: {
