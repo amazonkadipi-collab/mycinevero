@@ -8,6 +8,8 @@ export default function AgeGate() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // The browser-only preference is intentionally read after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisible(window.localStorage.getItem(CONSENT_KEY) !== 'yes');
   }, []);
 

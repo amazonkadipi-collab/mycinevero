@@ -27,5 +27,4 @@
 .pagination button { background:#141414; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:6px; cursor:pointer; }
 .pagination button:disabled { opacity:.35; cursor:not-allowed; }
 @media (max-width:1000px){.videoGrid{grid-template-columns:repeat(3,minmax(0,1fr));}}
-@media (max-width:700px){.container{padding:0 14px}.headerInner{align-items:flex-start;flex-direction:column}.videoGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
-@media (max-width:450px){.videoGrid{grid-template-columns:1fr}}
+@media (max-width:700px){.container{padding:0 14px}.headerInner{align-items:flex-start;flex-direction:column}.videoGrid{grid-template-columns:1fr;gap:14px}}

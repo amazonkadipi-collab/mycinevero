@@ -76,6 +76,7 @@ export default function VideoPortalClient(props: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(props.initialError || '');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState(props.initialSearch);
   const prefetching = useRef(new Set<string>());
 
@@ -111,15 +112,19 @@ export default function VideoPortalClient(props: Props) {
   useEffect(() => {
     const cached = cacheRead(requestKey);
     if (cached) {
-      setVideos(cached.videos);
-      setTotalCount(cached.totalCount);
-      setTotalPages(Math.max(1, cached.totalPages));
-      setError('');
+      queueMicrotask(() => {
+        setVideos(cached.videos);
+        setTotalCount(cached.totalCount);
+        setTotalPages(Math.max(1, cached.totalPages));
+        setError('');
+      });
       return;
     }
     if (page === props.initialPage && activeSearch === props.initialSearch) return;
 
     const controller = new AbortController();
+    // Loading state intentionally tracks the external fetch lifecycle.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError('');
     fetch(buildUrl(page), { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json' } })
@@ -141,14 +146,14 @@ export default function VideoPortalClient(props: Props) {
   }, [requestKey, page, activeSearch, props.initialPage, props.initialSearch]);
 
   const changeCategory = (category: string) => {
-    setMenuOpen(false); setActiveSearch(category); setPage(1); setError('');
+    setMenuOpen(false); setSearchOpen(false); setActiveSearch(category); setPage(1); setError('');
     window.history.pushState({}, '', `/?category=${encodeURIComponent(category)}`);
   };
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = searchDraft.trim();
-    setMenuOpen(false); setActiveSearch(query); setPage(1); setError('');
+    setMenuOpen(false); setSearchOpen(false); setActiveSearch(query); setPage(1); setError('');
     window.history.pushState({}, '', query ? `/?category=${encodeURIComponent(query)}` : '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
@@ -182,21 +187,23 @@ export default function VideoPortalClient(props: Props) {
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 lg:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold"> <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600"><Play className="h-3.5 w-3.5 fill-white text-white" /></span>ELO<span className="text-red-600">VEX</span></Link>
-        <form onSubmit={submitSearch} className="hidden min-w-0 max-w-xl flex-1 items-center gap-2 sm:flex"><div className="flex min-w-0 flex-1 items-center rounded-lg border border-zinc-200 bg-zinc-50 px-3"><Search className="h-4 w-4 shrink-0 text-zinc-400" /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" /></div><button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-700">Search</button></form><div className="flex items-center gap-2"><Link href="/admin" className="hidden rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:bg-zinc-100 sm:block">Admin</Link><button type="button" aria-label="Open categories menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="rounded-md p-2 lg:hidden">{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div>
+        <form onSubmit={submitSearch} className="hidden min-w-0 max-w-xl flex-1 items-center gap-2 sm:flex"><div className="flex min-w-0 flex-1 items-center rounded-lg border border-zinc-200 bg-zinc-50 px-3"><Search className="h-4 w-4 shrink-0 text-zinc-400" /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" /></div><button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-700">Search</button></form><div className="flex items-center gap-1"><Link href="/admin" className="hidden rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:bg-zinc-100 sm:block">Admin</Link><button type="button" aria-label={searchOpen ? 'Close search' : 'Open search'} aria-expanded={searchOpen} onClick={() => { setSearchOpen((v) => !v); setMenuOpen(false); }} className="rounded-md p-2 hover:bg-zinc-100 sm:hidden"><Search className="h-5 w-5" /></button><button type="button" aria-label={menuOpen ? 'Close categories menu' : 'Open categories menu'} aria-expanded={menuOpen} onClick={() => { setMenuOpen((v) => !v); setSearchOpen(false); }} className="rounded-md p-2 hover:bg-zinc-100 lg:hidden">{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div>
       </div>
       <nav aria-label="Video categories" className="hidden mx-auto max-w-[1400px] gap-2 overflow-x-auto px-4 pb-3 lg:flex lg:px-6">
+        <Link href="/" onClick={() => changeCategory('')} className="whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">Best Videos</Link><Link href="/" className="whitespace-nowrap rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-600 hover:border-red-300 hover:text-red-600">Fresh Uploads</Link><span className="mx-1 border-l border-zinc-200" aria-hidden="true" />
         {CATEGORIES.map(([value, label]) => <Link key={value} href={`/?category=${encodeURIComponent(value)}`} onClick={() => changeCategory(value)} className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-red-300 hover:text-red-600'}`}>{label}</Link>)}
       </nav>
-      {menuOpen && <div className="border-t border-zinc-100 px-4 py-3 lg:hidden"><form onSubmit={submitSearch} className="mb-3 flex gap-2"><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none" /><button type="submit" className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white">Go</button></form><nav aria-label="Mobile video categories" className="grid grid-cols-2 gap-2">{CATEGORIES.map(([value, label]) => <Link key={value} href={`/?category=${encodeURIComponent(value)}`} onClick={() => setMenuOpen(false)} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm">{label}</Link>)}</nav></div>}
+      {searchOpen && <div className="border-t border-zinc-100 px-4 py-3 sm:hidden"><form onSubmit={submitSearch} className="flex gap-2"><div className="flex min-w-0 flex-1 items-center rounded-lg border border-zinc-200 bg-zinc-50 px-3"><Search className="h-4 w-4 shrink-0 text-zinc-400" /><input autoFocus value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" /></div><button type="submit" className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white">Go</button></form></div>}
+      {menuOpen && <div className="border-t border-zinc-100 px-4 py-3 lg:hidden"><nav aria-label="Mobile video categories" className="grid grid-cols-2 gap-2">{CATEGORIES.map(([value, label]) => <Link key={value} href={`/?category=${encodeURIComponent(value)}`} onClick={() => { setMenuOpen(false); setActiveSearch(value); }} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm">{label}</Link>)}</nav></div>}
     </header>
 
     <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
-      <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} videos` : 'Free Adult Videos & Trending Clips'}</h1><p className="mt-1 text-sm text-zinc-500">Browse free adult videos by category and discover fresh clips.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
+      <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} adult videos` : 'Free Adult Videos, Porn Videos & Trending Clips'}</h1><p className="mt-1 text-sm text-zinc-500">Browse free adult videos, trending clips, popular categories, and fresh uploads.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
       {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
       {loading && <div className="mb-4 text-sm text-zinc-500">Loading videos…</div>}
       <div className="relative min-h-[240px]">
-        {videos.length > 0 ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.slice(0, 50).map((video, index) => {
-          const id = String(video.id || '').trim(); const image = thumb(video); const enriched = video as VideoItem & { uploader?: string; author?: string; quality?: string }; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Adult video'} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" className="h-full w-full object-cover" />}<span className="absolute bottom-2 left-2 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{enriched.quality || 'HD'} · {video.length_min || video.duration || 'Watch'}</span></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5">{video.title || 'Untitled video'}</h2><p className="mt-1 truncate text-xs text-zinc-500">{enriched.uploader || enriched.author || 'Eporner provider'}</p><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3" />{video.rate ?? '—'}</span></div></div></>;
+        {videos.length > 0 ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.slice(0, 50).map((video, index) => {
+          const id = String(video.id || '').trim(); const image = thumb(video); const enriched = video as VideoItem & { uploader?: string; author?: string; quality?: string; has_subtitles?: boolean }; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Adult video'} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw" className="h-full w-full object-cover" />}<div className="absolute bottom-2 left-2 flex gap-1"><span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{enriched.quality || 'HD'}</span>{enriched.has_subtitles && <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">CC</span>}<span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration || 'Watch'}</span></div></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5">{video.title || 'Untitled video'}</h2><p className="mt-1 truncate text-xs text-zinc-500">{enriched.uploader || enriched.author || 'Eporner provider'}</p><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3" />{video.rate ?? '—'}</span></div></div></>;
           return id ? <Link key={`${id}-${index}`} href={`/videos/${encodeURIComponent(id)}`} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">{card}</Link> : <div key={index} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">{card}</div>;
         })}</div> : !loading && <div className="rounded-xl border border-zinc-200 p-8 text-center text-sm text-zinc-500">No videos are available right now.</div>}
       </div>
