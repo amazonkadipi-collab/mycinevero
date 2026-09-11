@@ -69,7 +69,7 @@ export const revalidate = 3600;
 
 export async function generateSitemaps() {
   const { total } = await getTotalVideos();
-  const sitemapCount = Math.max(1, Math.ceil(total / MAX_URLS_PER_SITEMAP));
+  const sitemapCount = Math.max(1, Math.ceil((total || 100000) / MAX_URLS_PER_SITEMAP));
   return Array.from({ length: sitemapCount }, (_, id) => ({ id }));
 }
 
