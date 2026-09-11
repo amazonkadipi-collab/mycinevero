@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Clock, Eye, Play, Star } from 'lucide-react';
+import { AlertCircle, Clock, Eye, Menu, Play, Star, X } from 'lucide-react';
 
 interface VideoItem {
   id?: string | number;
@@ -79,6 +79,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const prefetching = useRef(new Set<string>());
 
   useEffect(() => {
@@ -163,6 +164,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
     window.history.pushState({ page: nextPage, search: nextSearch }, '', `${path}${query ? `?${query}` : ''}`);
   };
   const changeCategory = (category: string) => {
+    setMenuOpen(false);
     setActiveSearch(category);
     setPage(1);
     syncListingUrl(1, category);
@@ -200,12 +202,13 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   return (
     <div className="min-h-screen bg-white text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white">
+      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 lg:px-6">
           <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-zinc-900"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600"><Play className="h-3.5 w-3.5 fill-white text-white" /></span>ELO<span className="text-red-600">VEX</span></Link>
-          <Link href="/admin" className="hidden px-2 py-1.5 text-xs text-zinc-500 sm:block">Admin</Link>
+          <div className="flex items-center gap-2"><Link href="/admin" className="hidden rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:bg-zinc-100 sm:block">Admin</Link><button type="button" aria-label="Open categories menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)} className="rounded-md p-2 text-zinc-700 hover:bg-zinc-100 lg:hidden">{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div>
         </div>
-        <nav aria-label="Video categories" className="mx-auto flex max-w-[1400px] gap-2 overflow-x-auto px-4 pb-3 lg:px-6">{CATEGORY_NAV.map(([value, label]) => <button key={value} onClick={() => changeCategory(value)} className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs transition ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-red-300 hover:text-red-600'}`}>{label}</button>)}</nav>
+        <nav aria-label="Video categories" className="hidden mx-auto max-w-[1400px] gap-2 overflow-x-auto px-4 pb-3 lg:flex lg:px-6">{CATEGORY_NAV.map(([value, label]) => <button key={value} onClick={() => changeCategory(value)} className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs transition ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-red-300 hover:text-red-600'}`}>{label}</button>)}</nav>
+        {menuOpen && <nav aria-label="Mobile video categories" className="grid grid-cols-2 gap-2 border-t border-zinc-100 px-4 py-3 lg:hidden">{CATEGORY_NAV.map(([value, label]) => <button key={value} onClick={() => changeCategory(value)} className={`rounded-lg border px-3 py-2.5 text-left text-sm ${activeSearch.toLowerCase() === value ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-700'}`}>{label}</button>)}</nav>}
       </header>
       <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
         <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} videos` : 'Choose a category'}</h1><p className="mt-1 text-sm text-zinc-500">Browse videos by category.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
