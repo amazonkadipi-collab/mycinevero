@@ -3,7 +3,7 @@ import { getPortalSettings } from '@/lib/site-settings';
 
 export const dynamic = 'force-dynamic';
 
-const ORDERS = new Set(['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly']);
+const ORDERS = new Set(['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly', 'random']);
 const THUMB_SIZES = new Set(['small', 'medium', 'big']);
 const responseCache = new Map<string, { expiresAt: number; body: unknown }>();
 const CACHE_TTL_MS = 60_000;

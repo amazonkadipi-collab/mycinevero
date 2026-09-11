@@ -15,7 +15,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ category?: string; order?: string }> }) {
   const params = await searchParams;
   const category = params.category?.trim() || '';
-  const order = ['most-popular', 'latest', 'longest', 'top-rated'].includes(params.order || '') ? params.order as string : 'latest';
+  const order = ['most-popular', 'latest', 'longest', 'top-rated', 'top-monthly', 'random'].includes(params.order || '') ? params.order as string : 'latest';
   const listing = await loadVideoListing(1, category, order, 50);
   const itemList = listing.videos.slice(0, 50).map((video, index) => ({ '@type': 'ListItem', position: index + 1, url: video.id ? `${SITE_URL}/videos/${encodeURIComponent(String(video.id))}` : undefined, name: video.title || 'Adult video' })).filter((item) => item.url);
 

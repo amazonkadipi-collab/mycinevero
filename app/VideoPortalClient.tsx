@@ -14,9 +14,19 @@ const CATEGORIES = [
 
 const SORT_OPTIONS = [
   ['most-popular', 'Relevance'],
-  ['latest', 'Date'],
-  ['longest', 'Duration'],
-  ['top-rated', 'Video quality'],
+  ['latest', 'Newest'],
+  ['top-rated', 'Rating'],
+  ['longest', 'Length'],
+  ['top-monthly', 'Views'],
+  ['random', 'Random'],
+] as const;
+
+const RESULT_FILTERS = [
+  { key: 'sort', label: 'Sort by', options: SORT_OPTIONS },
+  { key: 'date', label: 'Date', options: [['all', 'All dates'], ['3d', 'Last 3 days'], ['week', 'This week'], ['month', 'This month'], ['3m', 'Last 3 months'], ['6m', 'Last 6 months']] },
+  { key: 'duration', label: 'Duration', options: [['all', 'All durations'], ['short', 'Short videos (1–3 min)'], ['medium', 'Medium videos (3–10 min)'], ['long', 'Long videos (10+ min)'], ['10-20', 'Long videos (10–20 min)'], ['20plus', 'Long videos (20+ min)']] },
+  { key: 'quality', label: 'Video quality', options: [['all', 'Show all'], ['360p', '360p'], ['480p', '480p'], ['720p', '720p'], ['1080p', '1080p']] },
+  { key: 'viewed', label: 'Viewed videos', options: [['all', 'Show all'], ['hide', 'Hide']] },
 ] as const;
 
 type Props = {
@@ -83,6 +93,7 @@ export default function VideoPortalClient(props: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(props.initialError || '');
   const [sortOrder, setSortOrder] = useState(props.initialOrder || 'latest');
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({ date: 'all', duration: 'all', quality: 'all', viewed: 'all' });
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState(props.initialSearch);
@@ -178,6 +189,15 @@ export default function VideoPortalClient(props: Props) {
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
   };
 
+  const changeFilter = (key: string, value: string) => {
+    if (key === 'sort') { changeSort(value); return; }
+    setFilterValues((current) => ({ ...current, [key]: value }));
+    const params = new URLSearchParams(window.location.search);
+    if (activeSearch) params.set('category', activeSearch);
+    params.set(key, value);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+  };
+
   const changeCategory = (category: string) => {
     setMenuOpen(false); setSearchOpen(false); setActiveSearch(category); setPage(1); setError('');
     window.history.pushState({}, '', `/?category=${encodeURIComponent(category)}`);
@@ -198,6 +218,7 @@ export default function VideoPortalClient(props: Props) {
       setPage(match ? Math.max(1, Number(match[1])) : 1);
       setActiveSearch(params.get('category') || '');
       setSortOrder(params.get('order') || props.initialOrder || 'latest');
+      setFilterValues({ date: params.get('date') || 'all', duration: params.get('duration') || 'all', quality: params.get('quality') || 'all', viewed: params.get('viewed') || 'all' });
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -229,7 +250,7 @@ export default function VideoPortalClient(props: Props) {
 
     <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
       <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} adult videos` : 'Free Adult Videos, Porn Videos & Trending Clips'}</h1><p className="mt-1 text-sm text-zinc-500">Browse free adult videos, trending clips, popular categories, and fresh uploads.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
-      {activeSearch.trim() && <section className="mb-5" aria-label="Search result filters"><div className="flex items-center border-b border-zinc-300"><button type="button" className="border-b-2 border-zinc-700 px-2 py-3 text-base font-semibold text-zinc-900">Free <span className="font-normal text-zinc-500">{totalCount.toLocaleString()}</span></button></div><div className="mt-4 flex items-center justify-between gap-3"><h2 className="flex min-w-0 items-center gap-2 text-2xl font-bold capitalize sm:text-3xl">{activeSearch} <span className="text-base font-normal text-zinc-500">({totalCount.toLocaleString()} results)</span></h2><button type="button" className="flex shrink-0 items-center gap-1 text-sm text-zinc-700 hover:text-red-600"><Flag className="h-4 w-4" />Report</button></div><div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2"><div className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-base"><SlidersHorizontal className="h-5 w-5" /><span className="text-zinc-600">Sort by :</span>{SORT_OPTIONS.slice(0, 1).map(([value, label]) => <button key={value} type="button" onClick={() => changeSort(value)} className="font-semibold italic">{label}</button>)}<span className="ml-auto">⌄</span></div>{SORT_OPTIONS.slice(1).map(([value, label], index) => { const Icon = [CalendarDays, Clock3, Video][index]; return <button key={value} type="button" onClick={() => changeSort(value)} className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-left text-base hover:bg-zinc-200"><Icon className="h-5 w-5" />{label}<span className="ml-auto">⌄</span></button>; })}</div></section>}
+      {activeSearch.trim() && <section className="mb-5" aria-label="Search result filters"><div className="flex items-center border-b border-zinc-300"><button type="button" className="border-b-2 border-zinc-700 px-2 py-3 text-base font-semibold text-zinc-900">Free <span className="font-normal text-zinc-500">{totalCount.toLocaleString()}</span></button></div><div className="mt-4 flex items-center justify-between gap-3"><h2 className="flex min-w-0 items-center gap-2 text-2xl font-bold capitalize sm:text-3xl">{activeSearch} <span className="text-base font-normal text-zinc-500">({totalCount.toLocaleString()} results)</span></h2><button type="button" className="flex shrink-0 items-center gap-1 text-sm text-zinc-700 hover:text-red-600"><Flag className="h-4 w-4" />Report</button></div><div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">{RESULT_FILTERS.map(({ key, label, options }, index) => { const Icon = [SlidersHorizontal, CalendarDays, Clock3, Video, Eye][index]; const value = key === 'sort' ? sortOrder : filterValues[key]; return <label key={key} className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-base"><Icon className="h-5 w-5 shrink-0" /><span className="sr-only">{label}</span><select value={value} onChange={(event) => changeFilter(key, event.target.value)} aria-label={label} className="min-w-0 flex-1 appearance-none bg-transparent font-medium outline-none">{options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{key === 'sort' && optionValue === 'most-popular' ? `${label} : ${optionLabel}` : optionLabel}</option>)}</select><span aria-hidden="true">⌄</span></label>; })}</div></section>}
       {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
       {loading && <div className="mb-4 text-sm text-zinc-500">Loading videos…</div>}
       <div className="relative min-h-[240px]">
