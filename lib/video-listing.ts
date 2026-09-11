@@ -16,6 +16,10 @@ export type VideoItem = {
   quality?: string;
   uploader?: string;
   author?: string;
+  preview?: string;
+  preview_url?: string;
+  preview_mp4?: string;
+  pvv?: string;
 };
 
 export type VideoListing = {
