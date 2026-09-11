@@ -12,8 +12,9 @@ export type PortalSettings = {
 export const DEFAULT_PORTAL_SETTINGS: PortalSettings = {
   query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1, format: 'json', method: 'search', video_id: '',
   api_base_url: 'https://www.eporner.com/api/v2', api_search_path: '/video/search', api_details_path: '/video/id', api_timeout_ms: 10000,
-  api_format: 'json', items_per_page: 24, cache_duration: 0, google_site_verification: '', bing_site_verification: '',
-  yandex_site_verification: '', naver_site_verification: '', baidu_site_verification: '', indexnow_key: '',
+  api_format: 'json', items_per_page: 24, cache_duration: 0,
+  google_site_verification: 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A',
+  bing_site_verification: '', yandex_site_verification: '', naver_site_verification: '', baidu_site_verification: '', indexnow_key: '',
 };
 
 const KEYS = Object.keys(DEFAULT_PORTAL_SETTINGS) as (keyof PortalSettings)[];
