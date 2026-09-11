@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
+import AgeGate from '@/components/AgeGate';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body suppressHydrationWarning>
         <AnalyticsTracker />
+        <AgeGate />
         {children}
       </body>
     </html>
