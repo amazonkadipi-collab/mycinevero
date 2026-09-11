@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Eye, Play, Star } from 'lucide-react';
@@ -13,7 +14,6 @@ type Video = {
   default_thumb?: { src?: string }; thumbs?: { src?: string }[];
 };
 type ApiResponse = { videos?: Video[] } | Video;
-
 type VideoPageData = { video: Video | null; settings: PortalSettings };
 
 function endpoint(base: string, path: string) {
@@ -64,11 +64,11 @@ async function getVideo(id: string, settings: PortalSettings): Promise<Video | n
   }
 }
 
-async function loadVideo(id: string): Promise<VideoPageData> {
+const loadVideo = cache(async (id: string): Promise<VideoPageData> => {
   const settings = await getSettings();
   const video = await getVideo(id, settings);
   return { video, settings };
-}
+});
 
 function metadataFor(id: string, video: Video | null): Metadata {
   const title = video?.title || 'Watch Video';
