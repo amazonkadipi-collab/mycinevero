@@ -22,7 +22,7 @@ type VideoCache = { videos: VideoItem[]; totalCount: number; totalPages: number;
 
 const DEFAULTS: PortalSettings = { query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1 };
 const NAV = [['latest', 'Latest'], ['most-popular', 'Most Popular'], ['top-weekly', 'Trending'], ['top-rated', 'Top Rated']];
-const CACHE_PREFIX = 'elovex:videos:v2:';
+const CACHE_PREFIX = 'elovex:videos:v3:';
 const CACHE_TTL = 5 * 60 * 1000;
 
 function readVideoCache(key: string): VideoCache | null {
@@ -88,6 +88,7 @@ export default function VideoPortalPage() {
     }
 
     const controller = new AbortController();
+    let active = true;
     setError('');
     const params = new URLSearchParams({
       q: activeSearch.trim() || settings.query || 'all',
@@ -100,13 +101,18 @@ export default function VideoPortalPage() {
       format: 'json',
     });
 
-    fetch(`/api/videos/search?${params.toString()}`, { signal: controller.signal, headers: { Accept: 'application/json' } })
+    fetch(`/api/videos/search?${params.toString()}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+    })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Unable to load videos');
         return data;
       })
       .then((data) => {
+        if (!active) return;
         const list: VideoItem[] = Array.isArray(data) ? data : data.videos || data.results || data.data || [];
         const total = Number(data.total_count ?? data.total ?? list.length);
         const pages = Number(data.total_pages ?? data.totalPages) || Math.max(1, Math.ceil(total / (settings.per_page || 24)));
@@ -116,19 +122,22 @@ export default function VideoPortalPage() {
         writeVideoCache(requestKey, { videos: list, totalCount: total, totalPages: pages });
       })
       .catch((err) => {
-        if (err?.name !== 'AbortError') {
-          // Keep cached/previous results visible instead of replacing useful data with an error state.
-          if (!cached) {
-            setVideos([]);
-            setTotalCount(0);
-            setTotalPages(1);
-          }
-          setError(err instanceof Error ? err.message : 'Unable to load videos');
+        if (!active || err?.name === 'AbortError') return;
+        if (!cached) {
+          setVideos([]);
+          setTotalCount(0);
+          setTotalPages(1);
         }
+        setError(err instanceof Error ? err.message : 'Unable to load videos');
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-    return () => controller.abort();
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [requestKey, activeSearch, page, order, settings.query, settings.per_page, settings.thumbsize, settings.gay, settings.lq]);
 
   const submitSearch = (event: FormEvent) => { event.preventDefault(); setPage(1); setActiveSearch(searchQuery); };
