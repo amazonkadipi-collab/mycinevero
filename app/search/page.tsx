@@ -18,7 +18,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; order?: string }> }) {
   const { q, order: requestedOrder } = await searchParams;
   const query = q?.trim() || '';
-  const order = ['most-popular', 'latest', 'longest', 'top-rated', 'top-monthly'].includes(requestedOrder || '') ? requestedOrder as string : 'most-popular';
+  const order = ['most-popular', 'latest', 'longest', 'top-rated'].includes(requestedOrder || '') ? requestedOrder as string : 'most-popular';
   const listing = await loadVideoListing(1, query, order, 50);
   return <VideoPortalClient initialPage={1} initialSearch={query} initialOrder={order} initialVideos={listing.videos} initialTotalCount={listing.totalCount} initialTotalPages={listing.totalPages} initialError={listing.error} />;
 }

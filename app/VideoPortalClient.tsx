@@ -17,7 +17,6 @@ const SORT_OPTIONS = [
   ['latest', 'Date'],
   ['longest', 'Duration'],
   ['top-rated', 'Video quality'],
-  ['top-monthly', 'Viewed videos'],
 ] as const;
 
 type Props = {
@@ -87,9 +86,26 @@ export default function VideoPortalClient(props: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState(props.initialSearch);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const prefetching = useRef(new Set<string>());
 
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
+  const searchSuggestions = useMemo(() => {
+    const query = searchDraft.trim().toLowerCase();
+    if (!query) return [];
+    const sources = [...CATEGORIES.map(([, label]) => label), ...videos.map((video) => video.title || '')];
+    const unique = new Set<string>();
+    for (const source of sources) {
+      const words = source.trim().split(/\s+/).filter(Boolean).slice(0, 12);
+      for (let index = 0; index < words.length; index += 1) {
+        for (let size = 1; size <= 2 && index + size <= words.length; size += 1) {
+          const value = words.slice(index, index + size).join(' ');
+          if (value.toLowerCase().includes(query)) unique.add(value);
+        }
+      }
+    }
+    return [...unique].slice(0, 6);
+  }, [searchDraft, videos]);
   const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, order: sortOrder, gay: effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay, lq: settings.lq }), [effectiveQuery, page, settings.gay, settings.lq, sortOrder]);
 
   useEffect(() => {
@@ -170,7 +186,7 @@ export default function VideoPortalClient(props: Props) {
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = searchDraft.trim();
-    setMenuOpen(false); setSearchOpen(false); setActiveSearch(query); setPage(1); setError('');
+    setMenuOpen(false); setSearchOpen(false); setSuggestionsOpen(false); setActiveSearch(query); setPage(1); setError('');
     window.history.pushState({}, '', query ? `/?category=${encodeURIComponent(query)}` : '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
@@ -207,13 +223,13 @@ export default function VideoPortalClient(props: Props) {
   return <div className="min-h-screen bg-white text-zinc-900">
     <header data-search-open={searchOpen} className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 lg:px-6"><button type="button" aria-label={menuOpen ? 'Close categories menu' : 'Open categories menu'} aria-expanded={menuOpen} onClick={() => { setMenuOpen((v) => !v); setSearchOpen(false); }} className="order-1 rounded-md p-1.5 hover:bg-zinc-100"><Menu className="h-7 w-7" /></button><Link href="/" className="order-2 mx-auto flex items-center gap-1 text-2xl font-black tracking-tight sm:text-3xl"><span className="text-zinc-950">ELO</span><span className="text-red-600">VEX</span></Link><div className="order-3 flex items-center gap-1"><button type="button" aria-label="Account" className="rounded-md p-1.5 hover:bg-zinc-100"><UserRound className="h-6 w-6" /></button><button type="button" aria-label="Settings" className="rounded-md p-1.5 hover:bg-zinc-100"><Settings className="h-6 w-6" /></button></div></div>
-      <div className="border-t border-zinc-100 px-4 py-3"><form onSubmit={submitSearch} className="mx-auto flex max-w-[900px] gap-2"><div className="flex min-w-0 flex-1 items-center rounded-lg border border-zinc-200 bg-zinc-50 px-3"><Search className="h-5 w-5 shrink-0 text-zinc-700" /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-base outline-none" /></div><button type="submit" aria-label="Search" className="rounded-lg bg-zinc-100 px-4 text-zinc-950 hover:bg-zinc-200"><Search className="h-6 w-6" /></button></form></div>
+      <div className="border-t border-zinc-100 px-4 py-3"><div className="relative mx-auto max-w-[900px]"><form onSubmit={submitSearch} className="flex gap-2"><div className="flex min-w-0 flex-1 items-center rounded-lg border border-zinc-200 bg-zinc-50 px-3"><Search className="h-5 w-5 shrink-0 text-zinc-700" /><input value={searchDraft} onFocus={() => setSuggestionsOpen(true)} onChange={(event) => { setSearchDraft(event.target.value.slice(0, 80)); setSuggestionsOpen(true); }} placeholder="Search videos" aria-label="Search videos" autoComplete="off" className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-base outline-none" /></div><button type="submit" aria-label="Search" className="rounded-lg bg-zinc-100 px-4 text-zinc-950 hover:bg-zinc-200"><Search className="h-6 w-6" /></button></form>{suggestionsOpen && searchSuggestions.length > 0 && <div className="absolute left-0 right-12 top-full z-50 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">{searchSuggestions.map((suggestion) => <button key={suggestion} type="button" onMouseDown={() => { setSearchDraft(suggestion); setSuggestionsOpen(false); }} className="block w-full px-4 py-2 text-left text-sm hover:bg-zinc-50">{suggestion}</button>)}</div>}</div></div>
       {menuOpen && <div className="border-t border-zinc-100 bg-white px-4 py-3 shadow-sm"><nav aria-label="Video categories" className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{CATEGORIES.map(([value, label]) => <Link key={value} href={`/?category=${encodeURIComponent(value)}`} onClick={() => { setMenuOpen(false); setActiveSearch(value); }} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm hover:border-red-300 hover:text-red-600">{label}</Link>)}</nav></div>}
     </header>
 
     <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
       <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} adult videos` : 'Free Adult Videos, Porn Videos & Trending Clips'}</h1><p className="mt-1 text-sm text-zinc-500">Browse free adult videos, trending clips, popular categories, and fresh uploads.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
-      <section className="mb-5" aria-label="Search result filters"><div className="flex items-center gap-5 border-b border-zinc-300"><button type="button" className="border-b-2 border-zinc-700 px-2 py-3 text-base font-semibold text-zinc-900">Free <span className="font-normal text-zinc-500">{totalCount.toLocaleString()}</span></button><button type="button" disabled className="px-2 py-3 text-base font-semibold text-zinc-500" title="Premium results coming soon">Premium <span className="font-normal text-zinc-400">—</span></button></div><div className="mt-4 flex items-center justify-between gap-3"><h2 className="flex min-w-0 items-center gap-2 text-2xl font-bold capitalize sm:text-3xl">{activeSearch || 'Latest videos'} <span className="text-base font-normal text-zinc-500">({totalCount.toLocaleString()} results)</span></h2><button type="button" className="flex shrink-0 items-center gap-1 text-sm text-zinc-700 hover:text-red-600"><Flag className="h-4 w-4" />Report</button></div><div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2"><div className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-base"><SlidersHorizontal className="h-5 w-5" /><span className="text-zinc-600">Sort by :</span>{SORT_OPTIONS.slice(0, 1).map(([value, label]) => <button key={value} type="button" onClick={() => changeSort(value)} className="font-semibold italic">{label}</button>)}<span className="ml-auto">⌄</span></div>{SORT_OPTIONS.slice(1).map(([value, label], index) => { const Icon = [CalendarDays, Clock3, Video, Eye][index]; return <button key={value} type="button" onClick={() => changeSort(value)} className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-left text-base hover:bg-zinc-200"><Icon className="h-5 w-5" />{label}<span className="ml-auto">⌄</span></button>; })}</div></section>
+      {activeSearch.trim() && <section className="mb-5" aria-label="Search result filters"><div className="flex items-center border-b border-zinc-300"><button type="button" className="border-b-2 border-zinc-700 px-2 py-3 text-base font-semibold text-zinc-900">Free <span className="font-normal text-zinc-500">{totalCount.toLocaleString()}</span></button></div><div className="mt-4 flex items-center justify-between gap-3"><h2 className="flex min-w-0 items-center gap-2 text-2xl font-bold capitalize sm:text-3xl">{activeSearch} <span className="text-base font-normal text-zinc-500">({totalCount.toLocaleString()} results)</span></h2><button type="button" className="flex shrink-0 items-center gap-1 text-sm text-zinc-700 hover:text-red-600"><Flag className="h-4 w-4" />Report</button></div><div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2"><div className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-base"><SlidersHorizontal className="h-5 w-5" /><span className="text-zinc-600">Sort by :</span>{SORT_OPTIONS.slice(0, 1).map(([value, label]) => <button key={value} type="button" onClick={() => changeSort(value)} className="font-semibold italic">{label}</button>)}<span className="ml-auto">⌄</span></div>{SORT_OPTIONS.slice(1).map(([value, label], index) => { const Icon = [CalendarDays, Clock3, Video][index]; return <button key={value} type="button" onClick={() => changeSort(value)} className="flex items-center gap-3 rounded-md bg-zinc-100 px-4 py-3 text-left text-base hover:bg-zinc-200"><Icon className="h-5 w-5" />{label}<span className="ml-auto">⌄</span></button>; })}</div></section>}
       {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
       {loading && <div className="mb-4 text-sm text-zinc-500">Loading videos…</div>}
       <div className="relative min-h-[240px]">

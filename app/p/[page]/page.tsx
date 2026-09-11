@@ -21,7 +21,7 @@ export default async function PaginatedVideoPage({ params, searchParams }: { par
   const filters = await searchParams;
   const initialPage = Math.max(1, Number.parseInt(page, 10) || 1);
   const category = filters.category?.trim() || '';
-  const order = ['most-popular', 'latest', 'longest', 'top-rated', 'top-monthly'].includes(filters.order || '') ? filters.order as string : 'latest';
+  const order = ['most-popular', 'latest', 'longest', 'top-rated'].includes(filters.order || '') ? filters.order as string : 'latest';
   const listing = await loadVideoListing(initialPage, category, order, 50);
 
   return <>
