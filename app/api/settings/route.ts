@@ -1,84 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DEFAULT_PORTAL_SETTINGS, getPortalSettings, getSavedPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
-
-export const dynamic = 'force-dynamic';
-const ADMIN_COOKIE = 'elovex_admin';
-const ORDERS = new Set(['latest','longest','shortest','top-rated','most-popular','top-weekly','top-monthly']);
-const THUMB_SIZES = new Set(['small','medium','big']);
-const METHODS = new Set(['search','id','removed']);
-const FORMATS = new Set(['json','xml']);
-const SELECT_VALUES = new Set(['0','1','2']);
-const PAGE_VALUES = new Set(['12','24','48','96']);
-const CACHE_VALUES = new Set(['0','60','300','3600']);
-
-function isAdmin(request: NextRequest) { return request.cookies.get(ADMIN_COOKIE)?.value === 'authenticated'; }
-function cleanText(value: unknown, max = 500) { return String(value ?? '').trim().slice(0, max); }
-function cleanPath(value: unknown, fallback: string) {
-  const path = cleanText(value, 300) || fallback;
-  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) throw new Error('API path must be a relative path starting with /');
-  return path;
+import { getPortalSettings, getSavedPortalSettings, savePortalSettings, type PortalSettings } from '@/lib/site-settings';
+export const dynamic='force-dynamic';
+const ADMIN_COOKIE='elovex_admin';
+const ORDERS=new Set(['latest','longest','shortest','top-rated','most-popular','top-weekly','top-monthly']); const THUMB_SIZES=new Set(['small','medium','big']); const METHODS=new Set(['search','id','removed']); const FORMATS=new Set(['json','xml']); const SELECT_VALUES=new Set(['0','1','2']); const PAGE_VALUES=new Set(['12','24','48','96']); const CACHE_VALUES=new Set(['0','60','300','3600']);
+function isAdmin(r:NextRequest){return r.cookies.get(ADMIN_COOKIE)?.value==='authenticated'}
+function text(v:unknown,max=500){return String(v??'').trim().slice(0,max)}
+function path(v:unknown,fallback:string){const p=text(v,300)||fallback;if(!p.startsWith('/')||p.startsWith('//')||p.includes('\\'))throw Error('API path must be a relative path starting with /');return p}
+function num(v:unknown,set:Set<string>,name:string){if(v===''||v==null)return '' as const;const s=String(v);if(!set.has(s))throw Error(`Invalid ${name}`);return Number(s)}
+function validate(input:Record<string,unknown>):PortalSettings{
+ const api_base_url=text(input.api_base_url), parsed=api_base_url?new URL(api_base_url):null;
+ if(parsed&&(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password))throw Error('Invalid API Base URL');
+ const timeout=input.api_timeout_ms===''||input.api_timeout_ms==null?'':Number(input.api_timeout_ms);
+ if(timeout!==''&&(!Number.isInteger(timeout)||timeout<1000||timeout>60000))throw Error('API timeout must be between 1000 and 60000 ms');
+ const order=text(input.order,40),thumbsize=text(input.thumbsize,20),method=text(input.method,20),format=text(input.format,10) as PortalSettings['format'],api_format=text(input.api_format,10) as PortalSettings['api_format'];
+ if(order&&!ORDERS.has(order))throw Error('Invalid order'); if(thumbsize&&!THUMB_SIZES.has(thumbsize))throw Error('Invalid thumbsize'); if(method&&!METHODS.has(method))throw Error('Invalid API method'); if(format&&!FORMATS.has(format))throw Error('Invalid response format'); if(api_format&&!FORMATS.has(api_format))throw Error('Invalid API response format');
+ return {query:text(input.query,200),order,per_page:num(input.per_page,PAGE_VALUES,'per_page'),thumbsize,gay:num(input.gay,SELECT_VALUES,'filter option A'),lq:num(input.lq,SELECT_VALUES,'filter option B'),format,method,video_id:text(input.video_id,200),api_base_url,api_search_path:path(input.api_search_path,'/search'),api_details_path:path(input.api_details_path,'/details'),api_timeout_ms:timeout,api_format,items_per_page:num(input.items_per_page,PAGE_VALUES,'items per page'),cache_duration:num(input.cache_duration,CACHE_VALUES,'cache duration'),google_site_verification:text(input.google_site_verification,500),bing_site_verification:text(input.bing_site_verification,500),yandex_site_verification:text(input.yandex_site_verification,500),naver_site_verification:text(input.naver_site_verification,500),baidu_site_verification:text(input.baidu_site_verification,500),indexnow_key:text(input.indexnow_key,200)};
 }
-function optionalNumber(value: unknown, allowed: Set<string>, field: string) {
-  if (value === '' || value === null || value === undefined) return '' as const;
-  const stringValue = String(value);
-  if (!allowed.has(stringValue)) throw new Error(`Invalid ${field}`);
-  return Number(stringValue);
-}
-
-function validateSettings(input: Record<string, unknown>): PortalSettings {
-  const query = cleanText(input.query, 200);
-  const order = cleanText(input.order, 40);
-  const thumbsize = cleanText(input.thumbsize, 20);
-  const method = cleanText(input.method, 20);
-  const video_id = cleanText(input.video_id, 200);
-  const format = cleanText(input.format, 10) as PortalSettings['format'];
-  const api_base_url = cleanText(input.api_base_url, 500);
-  const api_search_path = cleanPath(input.api_search_path, '/search');
-  const api_details_path = cleanPath(input.api_details_path, '/details');
-  const api_format = cleanText(input.api_format, 10) as PortalSettings['api_format'];
-  const per_page = optionalNumber(input.per_page, PAGE_VALUES, 'per_page');
-  const gay = optionalNumber(input.gay, SELECT_VALUES, 'filter option A');
-  const lq = optionalNumber(input.lq, SELECT_VALUES, 'filter option B');
-  const items_per_page = optionalNumber(input.items_per_page, PAGE_VALUES, 'items per page');
-  const cache_duration = optionalNumber(input.cache_duration, CACHE_VALUES, 'cache duration');
-  const api_timeout_ms = input.api_timeout_ms === '' || input.api_timeout_ms == null ? '' : Number(input.api_timeout_ms);
-
-  if (order && !ORDERS.has(order)) throw new Error('Invalid order');
-  if (thumbsize && !THUMB_SIZES.has(thumbsize)) throw new Error('Invalid thumbsize');
-  if (method && !METHODS.has(method)) throw new Error('Invalid API method');
-  if (format && !FORMATS.has(format)) throw new Error('Invalid response format');
-  if (api_format && !FORMATS.has(api_format)) throw new Error('Invalid API response format');
-  if (api_timeout_ms !== '' && (!Number.isInteger(api_timeout_ms) || api_timeout_ms < 1000 || api_timeout_ms > 60000)) throw new Error('API timeout must be between 1000 and 60000 ms');
-  if (api_base_url) {
-    const parsed = new URL(api_base_url);
-    if (!['http:','https:'].includes(parsed.protocol)) throw new Error('API Base URL must use HTTP or HTTPS');
-    if (parsed.username || parsed.password) throw new Error('API Base URL must not contain embedded credentials');
-  }
-  return { query, order, per_page, thumbsize, gay, lq, format, method, video_id, api_base_url, api_search_path, api_details_path, api_timeout_ms, api_format, items_per_page, cache_duration };
-}
-
-const ADMIN_FIELDS: (keyof PortalSettings)[] = ['query','order','per_page','thumbsize','gay','lq','format','method','video_id','api_base_url','api_search_path','api_details_path','api_timeout_ms','api_format','items_per_page','cache_duration'];
-function blankAdminSettings(saved: Partial<PortalSettings>): Record<string, unknown> {
-  return Object.fromEntries(ADMIN_FIELDS.map((key) => [key, saved[key] ?? '']));
-}
-
-export async function GET(request: NextRequest) {
-  if (isAdmin(request)) {
-    const saved = await getSavedPortalSettings();
-    return NextResponse.json({ success: true, settings: blankAdminSettings(saved) }, { headers: { 'Cache-Control': 'no-store' } });
-  }
-
-  const settings = await getPortalSettings();
-  return NextResponse.json({ success: true, settings: { query: settings.query, order: settings.order, per_page: settings.per_page, thumbsize: settings.thumbsize, gay: settings.gay, lq: settings.lq, format: settings.format, method: settings.method } }, { headers: { 'Cache-Control': 'no-store' } });
-}
-
-export async function POST(request: NextRequest) {
-  if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  try {
-    const settings = validateSettings(await request.json());
-    await savePortalSettings(settings);
-    return NextResponse.json({ success: true, message: 'Settings saved successfully!', settings: blankAdminSettings(settings) });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid settings' }, { status: 400 });
-  }
-}
+const ADMIN_FIELDS:(keyof PortalSettings)[]=Object.keys({query:1,order:1,per_page:1,thumbsize:1,gay:1,lq:1,format:1,method:1,video_id:1,api_base_url:1,api_search_path:1,api_details_path:1,api_timeout_ms:1,api_format:1,items_per_page:1,cache_duration:1,google_site_verification:1,bing_site_verification:1,yandex_site_verification:1,naver_site_verification:1,baidu_site_verification:1,indexnow_key:1}) as (keyof PortalSettings)[];
+function adminSettings(saved:Partial<PortalSettings>){return Object.fromEntries(ADMIN_FIELDS.map(k=>[k,saved[k]??'']))}
+export async function GET(r:NextRequest){if(isAdmin(r)){return NextResponse.json({success:true,settings:adminSettings(await getSavedPortalSettings())},{headers:{'Cache-Control':'no-store'}})}const s=await getPortalSettings();return NextResponse.json({success:true,settings:{query:s.query,order:s.order,per_page:s.per_page,thumbsize:s.thumbsize,gay:s.gay,lq:s.lq,format:s.format,method:s.method}},{headers:{'Cache-Control':'no-store'}})}
+export async function POST(r:NextRequest){if(!isAdmin(r))return NextResponse.json({error:'Unauthorized'},{status:401});try{const s=validate(await r.json());await savePortalSettings(s);return NextResponse.json({success:true,message:'Settings saved successfully!',settings:adminSettings(s)})}catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Invalid settings'},{status:400})}}
