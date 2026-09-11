@@ -69,10 +69,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     : `Watch ${title} online and discover related videos on Video Portal.`;
   const image = video ? thumbnail(video) : '';
   return {
-    title: `${title} | Video Portal`,
+    title: `${title} | Elovex`,
     description,
     keywords: video?.keywords?.split(',').map((keyword) => keyword.trim()),
-    openGraph: { title: `${title} | Video Portal`, description, type: 'video.other', images: image ? [image] : undefined },
+    openGraph: { title: `${title} | Elovex`, description, type: 'video.other', images: image ? [image] : undefined },
   };
 }
 
@@ -89,7 +89,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   return (
     <main className="min-h-screen bg-zinc-900 text-gray-200">
       <header className="border-b border-red-950/80 bg-red-800 text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4"><Link href="/" className="flex items-center gap-2 text-sm text-red-100 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to videos</Link><div className="text-sm font-black tracking-wider">VIDEO<span className="ml-1 rounded bg-zinc-950 px-1.5 py-0.5 text-xs text-red-500">PORTAL</span></div></div>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4"><Link href="/" className="flex items-center gap-2 text-sm text-red-100 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to videos</Link><div className="text-sm font-black tracking-wider">ELO<span className="ml-1 text-red-400">VEX</span></div></div>
       </header>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">

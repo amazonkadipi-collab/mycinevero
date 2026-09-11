@@ -87,7 +87,7 @@ export default function AdminPage() {
 
   const header = (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600/15 ring-1 ring-red-500/20"><Settings2 className="h-4 w-4 text-red-400" /></div><div><div className="text-sm font-black tracking-[0.18em] text-white">ADMIN</div><div className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">Complete API Settings</div></div></div>
         {authenticated && <div className="flex items-center gap-2"><Link href="/" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-zinc-400 hover:bg-white/5 hover:text-white sm:flex"><ArrowLeft className="h-3.5 w-3.5" /> Portal</Link><button type="button" onClick={logout} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-zinc-400 hover:border-red-500/30 hover:bg-red-500/5 hover:text-red-300"><LogOut className="h-3.5 w-3.5" /> Logout</button></div>}
       </div>
@@ -103,7 +103,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-200">{header}
       <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10">
-        <div className="mb-8"><div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-red-400">Administration</div><h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Complete API Settings</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Everything is editable here. Leave a field empty only when you intentionally want the application to use its fallback behavior.</p></div>
+        <div className="mb-8"><div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-red-400">Elovex Administration</div><h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Site & API Settings</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Manage Elovex content discovery, provider connection, and display settings from one place.</p></div>
         {loading && <div className="mb-5 flex items-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-4 py-3 text-sm text-zinc-500"><RefreshCw className="h-4 w-4 animate-spin" /> Loading saved settings…</div>}
         {message && <Alert success text={message} />}{error && <Alert text={error} />}
         <form onSubmit={save} className="space-y-5">
