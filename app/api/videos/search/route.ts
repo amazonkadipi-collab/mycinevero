@@ -27,6 +27,13 @@ function parseXmlVideos(xml: string) {
   return { count: value('count'), start: value('start'), per_page: value('per_page'), page: value('page'), total_count: value('total_count'), total_pages: value('total_pages'), videos };
 }
 
+function parseUpstreamBody(text: string, contentType: string | null) {
+  const cleaned = text.replace(/^\uFEFF/, '').trim();
+  try { return JSON.parse(cleaned) as unknown; } catch {
+    return contentType?.toLowerCase().includes('xml') || cleaned.startsWith('<') ? parseXmlVideos(cleaned) : null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const settings = await getPortalSettings();
   if (!settings.api_base_url || settings.api_base_url === 'SAMPLE_API_BASE_URL') {
@@ -74,14 +81,25 @@ export async function GET(request: NextRequest) {
     const timeoutMs = typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 10000;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         cache: 'no-store',
-        headers: { Accept: 'application/json' },
+        redirect: 'error',
+        headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8', 'User-Agent': 'ElovexVideoProxy/1.0' },
         signal: controller.signal,
       });
-      const text = await response.text();
-      let body: unknown;
-      try { body = JSON.parse(text); } catch { body = response.headers.get('content-type')?.includes('xml') || text.trim().startsWith('<') ? parseXmlVideos(text) : null; }
+      let text = await response.text();
+      let body: unknown = parseUpstreamBody(text, response.headers.get('content-type'));
+      if (body === null && response.ok) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        response = await fetch(url, {
+          cache: 'no-store',
+          redirect: 'error',
+          headers: { Accept: 'application/json', 'User-Agent': 'ElovexVideoProxy/1.0' },
+          signal: controller.signal,
+        });
+        text = await response.text();
+        body = parseUpstreamBody(text, response.headers.get('content-type'));
+      }
       if (!response.ok) {
         return NextResponse.json(
           { error: `Configured video API returned HTTP ${response.status}`, videos: [], total_count: 0, total_pages: 0 },
@@ -90,7 +108,7 @@ export async function GET(request: NextRequest) {
       }
       if (body === null) {
         return NextResponse.json(
-          { error: 'Configured video API returned an unsupported response format', videos: [], total_count: 0, total_pages: 0 },
+          { error: 'Video provider temporarily returned an unsupported response. Please retry shortly.', videos: [], total_count: 0, total_pages: 0 },
           { status: 502 },
         );
       }
