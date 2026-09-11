@@ -7,6 +7,7 @@ const ORDERS = new Set(['latest', 'longest', 'shortest', 'top-rated', 'most-popu
 const THUMB_SIZES = new Set(['small', 'medium', 'big']);
 const responseCache = new Map<string, { expiresAt: number; body: unknown }>();
 const CACHE_TTL_MS = 60_000;
+const EPORNER_BASE = 'https://www.eporner.com/api/v2';
 
 function buildEndpoint(base: string, path: string) {
   const url = new URL(base);
@@ -33,6 +34,12 @@ function parseUpstreamBody(text: string, contentType: string | null) {
     return contentType?.toLowerCase().includes('xml') || cleaned.startsWith('<') ? parseXmlVideos(cleaned) : null;
   }
 }
+function addSearchParams(url: URL, query: string, page: number, perPage: number, order: string, thumbsize: string, gay: number, lq: number) {
+  url.searchParams.set('query', query); url.searchParams.set('page', String(page)); url.searchParams.set('per_page', String(perPage));
+  url.searchParams.set('order', order); url.searchParams.set('thumbsize', thumbsize); url.searchParams.set('gay', String(gay)); url.searchParams.set('lq', String(lq)); url.searchParams.set('format', 'json');
+  return url;
+}
+function hasVideos(body: unknown) { return Boolean(body && typeof body === 'object' && Array.isArray((body as { videos?: unknown[] }).videos) && (body as { videos: unknown[] }).videos.length > 0); }
 
 export async function GET(request: NextRequest) {
   const settings = await getPortalSettings();
@@ -62,14 +69,7 @@ export async function GET(request: NextRequest) {
     if (![0, 1, 2].includes(gay)) return NextResponse.json({ error: 'Invalid secondary category value' }, { status: 400 });
     if (![0, 1, 2].includes(lq)) return NextResponse.json({ error: 'Invalid lq value' }, { status: 400 });
 
-    url.searchParams.set('query', query);
-    url.searchParams.set('page', String(page));
-    url.searchParams.set('per_page', String(perPage));
-    url.searchParams.set('order', order);
-    url.searchParams.set('thumbsize', thumbsize);
-    url.searchParams.set('gay', String(gay));
-    url.searchParams.set('lq', String(lq));
-    url.searchParams.set('format', 'json');
+    addSearchParams(url, query, page, perPage, order, thumbsize, gay, lq);
 
     const cacheKey = url.toString();
     const cached = responseCache.get(cacheKey);
@@ -95,6 +95,12 @@ export async function GET(request: NextRequest) {
           headers: { Accept: 'application/json', 'User-Agent': 'ElovexVideoProxy/1.0' },
           signal: controller.signal,
         });
+        text = await response.text();
+        body = parseUpstreamBody(text, response.headers.get('content-type'));
+      }
+      if (response.ok && !hasVideos(body) && (url.hostname !== 'www.eporner.com' || url.pathname !== '/api/v2/video/search/')) {
+        url = addSearchParams(buildEndpoint(EPORNER_BASE, '/video/search'), query, page, perPage, order, thumbsize, gay, lq);
+        response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json', 'User-Agent': 'ElovexVideoProxy/1.0' }, signal: controller.signal });
         text = await response.text();
         body = parseUpstreamBody(text, response.headers.get('content-type'));
       }
