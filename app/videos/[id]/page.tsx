@@ -61,16 +61,76 @@ function parseVideoResponse(text: string, contentType: string | null): Video | n
   }
 }
 
-async function getVideo(id: string, settings: PortalSettings): Promise<Video | null> {
-  const url = endpoint(settings.api_base_url, settings.api_details_path);
-  url.searchParams.set('id', id); url.searchParams.set('thumbsize', 'small'); url.searchParams.set('format', 'json');
+function findExactVideo(body: unknown, id: string): Video | null {
+  if (!body || typeof body !== 'object') return null;
+  const data = body as { id?: string | number; videos?: Video[] };
+  if (Array.isArray(data.videos)) {
+    return data.videos.find((item) => String(item?.id || '').trim() === id) || null;
+  }
+  return String(data.id || '').trim() === id ? body as Video : null;
+}
+
+async function fetchVideo(url: URL, timeoutMs: number): Promise<{ response: Response; text: string }> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { next: { revalidate: 300 }, headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8' }, signal: controller.signal });
-    if (!response.ok) return null;
-    return parseVideoResponse(await response.text(), response.headers.get('content-type'));
-  } catch { return null; } finally { clearTimeout(timeout); }
+    const response = await fetch(url, {
+      next: { revalidate: 300 },
+      headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8', 'User-Agent': 'ElovexVideoPage/1.0' },
+      signal: controller.signal,
+    });
+    return { response, text: await response.text() };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getVideo(id: string, settings: PortalSettings): Promise<Video | null> {
+  const timeoutMs = 7000;
+  const detailsUrl = endpoint(settings.api_base_url, settings.api_details_path);
+  detailsUrl.searchParams.set('id', id);
+  detailsUrl.searchParams.set('thumbsize', 'small');
+  detailsUrl.searchParams.set('format', 'json');
+
+  try {
+    const details = await fetchVideo(detailsUrl, timeoutMs);
+    if (details.response.ok) {
+      const parsed = parseVideoResponse(details.text, details.response.headers.get('content-type'));
+      if (parsed && String(parsed.id || '').trim() === id) return parsed;
+    }
+  } catch {
+    // Fall through to exact-ID search.
+  }
+
+  // Some providers expose an ID in search results but fail to resolve it through details.
+  // Retry through the search endpoint and only accept an exact ID match.
+  try {
+    const searchUrl = endpoint(settings.api_base_url, settings.api_search_path);
+    for (const [key, value] of Object.entries({
+      query: id,
+      page: '1',
+      per_page: '20',
+      order: settings.order || 'latest',
+      thumbsize: 'small',
+      gay: String(settings.gay || 0),
+      lq: String(settings.lq || 1),
+      format: 'json',
+    })) searchUrl.searchParams.set(key, value);
+
+    const search = await fetchVideo(searchUrl, timeoutMs);
+    if (!search.response.ok) return null;
+    const parsed = parseVideoResponse(search.text, search.response.headers.get('content-type'));
+    if (parsed && String(parsed.id || '').trim() === id) return parsed;
+
+    try {
+      const data = JSON.parse(search.text.replace(/^\uFEFF/, '').trim()) as { videos?: Video[] };
+      return findExactVideo(data, id);
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
 }
 
 const loadVideo = cache(async (id: string): Promise<VideoPageData> => {
