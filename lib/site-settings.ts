@@ -25,9 +25,16 @@ const TEXT_KEYS = new Set<keyof PortalSettings>([
 
 async function supabaseRequest(path: string, init?: RequestInit) {
   if (!SUPABASE_URL || !SUPABASE_SERVER_KEY) throw new Error('Supabase is not configured');
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...init, cache: 'no-store', headers: { apikey: SUPABASE_SERVER_KEY, Authorization: `Bearer ${SUPABASE_SERVER_KEY}`, 'Content-Type': 'application/json', ...(init?.headers || {}) },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+  try {
+    return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...init, cache: 'no-store', signal: controller.signal,
+      headers: { apikey: SUPABASE_SERVER_KEY, Authorization: `Bearer ${SUPABASE_SERVER_KEY}`, 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function parseRows(rows: { key: string; value: string }[]) {
