@@ -153,7 +153,7 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
     return undefined;
   }, [videos.length, totalPages, page, effectiveQuery, order, settings.gay, settings.lq]);
 
-  useEffect(() => { if (page > totalPages && totalPages >= 1) setPage(totalPages); }, [page, totalPages]);
+  useEffect(() => { if (!loading && page > totalPages && totalPages >= 1) setPage(totalPages); }, [loading, page, totalPages]);
 
   const syncListingUrl = (nextPage: number, nextSearch = activeSearch) => {
     const params = new URLSearchParams();
