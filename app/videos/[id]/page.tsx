@@ -16,6 +16,7 @@ type Video = {
 };
 type ApiResponse = { videos?: Video[] } | Video;
 type VideoPageData = { video: Video | null; settings: PortalSettings };
+type RelatedResult = { videos: Video[]; totalPages: number };
 
 function endpoint(base: string, path: string) {
   const url = new URL(base);
@@ -102,6 +103,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const image = thumbnail(video);
   const canonical = `${SITE_URL}/videos/${encodeURIComponent(id)}`;
   const relatedQuery = (video.keywords || '').split(',').map((item) => item.trim()).filter(Boolean).slice(0, 3).join(' ');
+  const relatedResult = relatedQuery ? await getRelated(video, id, settings) : { videos: [], totalPages: 0 };
 
   const videoSchema = {
     '@context': 'https://schema.org', '@type': 'VideoObject', name: title,
@@ -112,25 +114,27 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
     interactionStatistic: video.views ? { '@type': 'InteractionCounter', interactionType: 'https://schema.org/WatchAction', userInteractionCount: video.views } : undefined,
   };
 
-  const related = relatedQuery ? await getRelated(video, id, settings) : [];
-
-  return <main className="min-h-screen bg-zinc-950 text-gray-200"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }} /><header className="sticky top-0 z-30 border-b border-zinc-800/90 bg-zinc-950/95 text-white backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6"><Link href="/" className="flex items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to videos</Link><Link href="/" className="flex items-center gap-2 text-sm font-black tracking-wider"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600"><Play className="h-3.5 w-3.5 fill-white" /></span>ELO<span className="text-red-500">VEX</span></Link></div></header><div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-7"><article><div className="overflow-hidden rounded-xl border border-zinc-800 bg-black shadow-2xl"><div className="aspect-video">{embed ? <iframe src={embed} className="h-full w-full border-0" allow="autoplay; fullscreen; encrypted-media" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" title={title} /> : <div className="flex h-full items-center justify-center text-zinc-500">Player unavailable</div>}</div></div><div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 sm:p-5"><h1 className="text-xl font-bold leading-tight text-white sm:text-2xl">{title}</h1><div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-4 w-4" />{video.views?.toLocaleString() || '—'} views</span><span className="flex items-center gap-1 text-amber-400"><Star className="h-4 w-4 fill-current" />{video.rate || '—'}</span>{video.length_min && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{video.length_min}</span>}</div>{video.keywords && <p className="mt-4 border-t border-zinc-800 pt-4 text-sm leading-6 text-zinc-400">{video.keywords}</p>}</div></article><RelatedVideos initialVideos={related} query={relatedQuery} currentId={id} initialHasMore={related.length === 20} /></div></main>;
+  return <main className="min-h-screen bg-zinc-950 text-gray-200"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }} /><header className="sticky top-0 z-30 border-b border-zinc-800/90 bg-zinc-950/95 text-white backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6"><Link href="/" className="flex items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to videos</Link><Link href="/" className="flex items-center gap-2 text-sm font-black tracking-wider"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600"><Play className="h-3.5 w-3.5 fill-white" /></span>ELO<span className="text-red-500">VEX</span></Link></div></header><div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-7"><article><div className="overflow-hidden rounded-xl border border-zinc-800 bg-black shadow-2xl"><div className="aspect-video">{embed ? <iframe src={embed} className="h-full w-full border-0" allow="autoplay; fullscreen; encrypted-media" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" title={title} /> : <div className="flex h-full items-center justify-center text-zinc-500">Player unavailable</div>}</div></div><RelatedVideos initialVideos={relatedResult.videos} query={relatedQuery} currentId={id} initialHasMore={relatedResult.totalPages > 1} /><div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 sm:p-5"><h1 className="text-xl font-bold leading-tight text-white sm:text-2xl">{title}</h1><div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-4 w-4" />{video.views?.toLocaleString() || '—'} views</span><span className="flex items-center gap-1 text-amber-400"><Star className="h-4 w-4 fill-current" />{video.rate || '—'}</span>{video.length_min && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{video.length_min}</span>}</div>{video.keywords && <p className="mt-4 border-t border-zinc-800 pt-4 text-sm leading-6 text-zinc-400">{video.keywords}</p>}</div></article></div></main>;
 }
 
-async function getRelated(video: Video, currentId: string, settings: PortalSettings): Promise<Video[]> {
+async function getRelated(video: Video, currentId: string, settings: PortalSettings): Promise<RelatedResult> {
   const query = (video.keywords || '').split(',').map((item) => item.trim()).filter(Boolean).slice(0, 3).join(' ');
-  if (!query) return [];
+  if (!query) return { videos: [], totalPages: 0 };
   const url = endpoint(settings.api_base_url, settings.api_search_path);
   for (const [key, value] of Object.entries({ query, per_page: '20', page: '1', thumbsize: 'small', order: 'most-popular', gay: String(settings.gay || 0), lq: String(settings.lq || 1), format: 'json' })) url.searchParams.set(key, value);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4500);
   try {
     const response = await fetch(url, { next: { revalidate: 300 }, headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8' }, signal: controller.signal });
-    if (!response.ok) return [];
-    const text = await response.text();
+    if (!response.ok) return { videos: [], totalPages: 0 };
+    const text = (await response.text()).replace(/^\uFEFF/, '').trim();
     try {
-      const data = JSON.parse(text.replace(/^\uFEFF/, '').trim()) as { videos?: Video[] };
-      return (data.videos || []).filter((item) => item.id && item.id !== currentId).slice(0, 20);
-    } catch { return []; }
-  } catch { return []; } finally { clearTimeout(timeout); }
+      const data = JSON.parse(text) as { videos?: Video[]; total_pages?: number; total_count?: number };
+      const videos = (data.videos || []).filter((item) => item.id && item.id !== currentId).slice(0, 20);
+      const totalPages = Number(data.total_pages || 0) || (Number(data.total_count || 0) > 0 ? Math.ceil(Number(data.total_count) / 20) : (videos.length === 20 ? 2 : 1));
+      return { videos, totalPages };
+    } catch {
+      return { videos: [], totalPages: 0 };
+    }
+  } catch { return { videos: [], totalPages: 0 }; } finally { clearTimeout(timeout); }
 }
