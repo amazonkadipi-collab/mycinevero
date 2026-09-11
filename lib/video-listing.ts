@@ -11,6 +11,11 @@ export type VideoItem = {
   duration?: string;
   views?: number;
   rate?: number | string;
+  length_sec?: number;
+  added?: string;
+  quality?: string;
+  uploader?: string;
+  author?: string;
 };
 
 export type VideoListing = {
@@ -74,7 +79,9 @@ async function fetchJsonText(url: string, timeoutMs = 10000): Promise<any> {
   }
 }
 
-export async function loadVideoListing(page: number, category = '', order = 'latest', perPage = 50): Promise<VideoListing> {
+export type ListingFilters = { date?: string; duration?: string; quality?: string; viewed?: string };
+
+export async function loadVideoListing(page: number, category = '', order = 'latest', perPage = 50, filters: ListingFilters = {}): Promise<VideoListing> {
   const safePage = Math.max(1, Number(page) || 1);
   const params = new URLSearchParams({
     page: String(safePage),
@@ -91,6 +98,8 @@ export async function loadVideoListing(page: number, category = '', order = 'lat
   } else {
     params.set('query', 'all');
   }
+
+  for (const [key, value] of Object.entries(filters)) if (value && value !== 'all') params.set(key, value);
 
   try {
     const data = await fetchJsonText(`${SITE_URL}/api/videos/search?${params.toString()}`, 12000);

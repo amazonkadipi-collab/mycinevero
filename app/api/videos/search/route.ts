@@ -43,6 +43,25 @@ function addSearchParams(url: URL, query: string, page: number, perPage: number,
 }
 function hasVideos(body: unknown) { return Boolean(body && typeof body === 'object' && Array.isArray((body as { videos?: unknown[] }).videos) && (body as { videos: unknown[] }).videos.length > 0); }
 
+function applyFilters(body: unknown, input: URLSearchParams) {
+  if (!body || typeof body !== 'object' || !Array.isArray((body as { videos?: unknown[] }).videos)) return body;
+  const date = input.get('date') || 'all';
+  const duration = input.get('duration') || 'all';
+  const quality = input.get('quality') || 'all';
+  const now = Date.now();
+  const dateLimit = date === '3d' ? 3 : date === 'week' ? 7 : date === 'month' ? 30 : date === '3m' ? 90 : date === '6m' ? 180 : 0;
+  const videos = (body as { videos: any[] }).videos.filter((video) => {
+    const seconds = Number(video.length_sec || video.duration_sec || 0);
+    const durationMatch = duration === 'short' ? seconds >= 60 && seconds <= 180 : duration === 'medium' ? seconds > 180 && seconds <= 600 : duration === 'long' ? seconds > 600 : duration === '10-20' ? seconds >= 600 && seconds <= 1200 : duration === '20plus' ? seconds > 1200 : true;
+    const added = Date.parse(String(video.added || ''));
+    const dateMatch = !dateLimit || (Number.isFinite(added) && now - added <= dateLimit * 86400000);
+    const videoQuality = String(video.quality || video.resolution || '').toLowerCase();
+    const qualityMatch = quality === 'all' || !videoQuality || videoQuality.includes(quality.toLowerCase());
+    return durationMatch && dateMatch && qualityMatch;
+  });
+  return { ...(body as Record<string, unknown>), videos, total_count: videos.length, total_pages: videos.length ? 1 : 0 };
+}
+
 async function fetchUpstream(url: URL, timeoutMs: number) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -83,7 +102,8 @@ export async function GET(request: NextRequest) {
     if (![0, 1, 2].includes(lq)) return NextResponse.json({ error: 'Invalid lq value' }, { status: 400 });
 
     let url = addSearchParams(buildEndpoint(settings.api_base_url, settings.api_search_path), query, page, perPage, order, thumbsize, gay, lq);
-    const cacheKey = url.toString();
+    const filterKey = ['date', 'duration', 'quality', 'viewed'].map((key) => `${key}=${input.get(key) || 'all'}`).join('&');
+    const cacheKey = `${url.toString()}&${filterKey}`;
     const cached = responseCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return NextResponse.json(cached.body, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
@@ -106,6 +126,8 @@ export async function GET(request: NextRequest) {
       result = await fetchUpstream(url, timeoutMs);
       body = parseUpstreamBody(result.text, result.response.headers.get('content-type'));
     }
+
+    body = applyFilters(body, input);
 
     if (!result.response.ok) {
       return NextResponse.json({ error: `Configured video API returned HTTP ${result.response.status}`, videos: [], total_count: 0, total_pages: 0 }, { status: 502 });

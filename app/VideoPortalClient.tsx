@@ -37,6 +37,7 @@ type Props = {
   initialTotalCount: number;
   initialTotalPages: number;
   initialError?: string;
+  initialFilters?: { date: string; duration: string; quality: string; viewed: string };
 };
 
 type Settings = { query: string; order: string; gay: number; lq: number };
@@ -93,7 +94,7 @@ export default function VideoPortalClient(props: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(props.initialError || '');
   const [sortOrder, setSortOrder] = useState(props.initialOrder || 'latest');
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({ date: 'all', duration: 'all', quality: 'all', viewed: 'all' });
+  const [filterValues, setFilterValues] = useState<Record<string, string>>(props.initialFilters || { date: 'all', duration: 'all', quality: 'all', viewed: 'all' });
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -118,7 +119,7 @@ export default function VideoPortalClient(props: Props) {
     }
     return [...unique].slice(0, 6);
   }, [searchDraft, videos]);
-  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, order: sortOrder, gay: effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay, lq: settings.lq }), [effectiveQuery, page, settings.gay, settings.lq, sortOrder]);
+  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, order: sortOrder, filters: filterValues, gay: effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay, lq: settings.lq }), [effectiveQuery, page, filterValues, settings.gay, settings.lq, sortOrder]);
 
   useEffect(() => {
     fetch('/api/settings/public', { cache: 'no-store', headers: { Accept: 'application/json' } })
@@ -143,6 +144,7 @@ export default function VideoPortalClient(props: Props) {
       lq: String(settings.lq ?? 1),
       format: 'json',
     });
+    for (const [key, value] of Object.entries(filterValues)) if (value && value !== 'all') params.set(key, value);
     return `/api/videos/search?${params.toString()}`;
   };
 
@@ -157,8 +159,6 @@ export default function VideoPortalClient(props: Props) {
       });
       return;
     }
-    if (page === props.initialPage && activeSearch === props.initialSearch && sortOrder === props.initialOrder) return;
-
     const controller = new AbortController();
     // Loading state intentionally tracks the external fetch lifecycle.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -180,7 +180,7 @@ export default function VideoPortalClient(props: Props) {
       .catch((err) => { if (err?.name !== 'AbortError') { setVideos([]); setTotalCount(0); setTotalPages(1); setError(err instanceof Error ? err.message : 'Unable to load videos'); } })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [requestKey, page, activeSearch, props.initialPage, props.initialSearch, sortOrder]);
+  }, [requestKey, page, activeSearch, filterValues, props.initialPage, props.initialSearch, sortOrder]);
 
   const changeSort = (order: string) => {
     setSortOrder(order); setPage(1); setError('');
@@ -257,7 +257,7 @@ export default function VideoPortalClient(props: Props) {
       {loading && <div className="mb-4 text-sm text-zinc-500">Loading videos…</div>}
       <div className="relative min-h-[240px]">
         {videos.length > 0 ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.slice(0, 50).map((video, index) => {
-          const id = String(video.id || '').trim(); const image = thumb(video); const enriched = video as VideoItem & { uploader?: string; author?: string; quality?: string; has_subtitles?: boolean }; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Adult video'} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw" className="h-full w-full object-cover" />}<div className="absolute bottom-2 left-2 flex gap-1"><span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{enriched.quality || 'HD'}</span>{enriched.has_subtitles && <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">CC</span>}<span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration || 'Watch'}</span></div></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5">{video.title || 'Untitled video'}</h2><p className="mt-1 truncate text-xs text-zinc-500">{enriched.uploader || enriched.author || 'Eporner provider'}</p><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3" />{video.rate ?? '—'}</span></div></div></>;
+          const id = String(video.id || '').trim(); const image = thumb(video); const enriched = video as VideoItem & { uploader?: string; author?: string; quality?: string; has_subtitles?: boolean }; const card = <><div className="px-2.5 pt-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5">{video.title || 'Untitled video'}</h2></div><div className="relative mt-1 aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Adult video'} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw" className="h-full w-full object-cover" />}<div className="absolute bottom-2 left-2 flex gap-1"><span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{enriched.quality || 'HD'}</span>{enriched.has_subtitles && <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">CC</span>}</div></div><div className="flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-zinc-500"><span className="min-w-0 truncate">{enriched.uploader || enriched.author || 'Eporner provider'}</span><span className="shrink-0">{typeof video.views === 'number' ? video.views.toLocaleString() : '—'} views</span><span className="shrink-0 rounded bg-zinc-200 px-1.5 py-0.5">{video.length_min || video.duration || 'Watch'}</span></div></>;
           return id ? <Link key={`${id}-${index}`} href={`/videos/${encodeURIComponent(id)}`} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">{card}</Link> : <div key={index} className="overflow-hidden rounded-xl border border-zinc-200 bg-white">{card}</div>;
         })}</div> : !loading && <div className="rounded-xl border border-zinc-200 p-8 text-center text-sm text-zinc-500">No videos are available right now.</div>}
       </div>
