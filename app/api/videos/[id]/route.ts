@@ -7,7 +7,9 @@ function buildEndpoint(base: string, path: string) {
   const baseUrl = new URL(base);
   if (baseUrl.protocol !== 'https:' && process.env.NODE_ENV === 'production') throw new Error('Configured API base URL must use HTTPS');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return new URL(normalizedPath, baseUrl.origin + (baseUrl.pathname.endsWith('/') ? baseUrl.pathname : `${baseUrl.pathname}/`));
+  const url = new URL(baseUrl.toString());
+  url.pathname = `${baseUrl.pathname.replace(/\/$/, '')}${normalizedPath}`.replace(/\/$/, '') + '/';
+  return url;
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -39,7 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       try {
         body = JSON.parse(text);
       } catch {
-        return NextResponse.json({ error: 'Upstream API did not return valid JSON' }, { status: 502 });
+        return NextResponse.json({ error: 'Video provider temporarily returned an unsupported response. Please retry shortly.' }, { status: 502 });
       }
       if (!response.ok) {
         return NextResponse.json({ error: `Upstream API returned HTTP ${response.status}` }, { status: 502 });

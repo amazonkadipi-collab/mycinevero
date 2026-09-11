@@ -11,7 +11,7 @@ const CACHE_TTL_MS = 60_000;
 function buildEndpoint(base: string, path: string) {
   const url = new URL(base);
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  url.pathname = `${url.pathname.replace(/\/$/, '')}${normalizedPath}`;
+  url.pathname = `${url.pathname.replace(/\/$/, '')}${normalizedPath}`.replace(/\/$/, '') + '/';
   return url;
 }
 
@@ -83,7 +83,6 @@ export async function GET(request: NextRequest) {
     try {
       let response = await fetch(url, {
         cache: 'no-store',
-        redirect: 'error',
         headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8', 'User-Agent': 'ElovexVideoProxy/1.0' },
         signal: controller.signal,
       });
@@ -93,7 +92,6 @@ export async function GET(request: NextRequest) {
         await new Promise((resolve) => setTimeout(resolve, 250));
         response = await fetch(url, {
           cache: 'no-store',
-          redirect: 'error',
           headers: { Accept: 'application/json', 'User-Agent': 'ElovexVideoProxy/1.0' },
           signal: controller.signal,
         });
