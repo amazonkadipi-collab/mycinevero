@@ -12,6 +12,14 @@ const CATEGORIES = [
   ['solo', 'Solo'], ['threesome', 'Threesome'], ['vintage', 'Vintage'], ['webcam', 'Webcam'],
 ] as const;
 
+const SORT_OPTIONS = [
+  ['most-popular', 'Relevance'],
+  ['latest', 'Date'],
+  ['longest', 'Duration'],
+  ['top-rated', 'Video quality'],
+  ['top-monthly', 'Viewed videos'],
+] as const;
+
 type Props = {
   initialPage: number;
   initialSearch: string;
@@ -75,13 +83,14 @@ export default function VideoPortalClient(props: Props) {
   const [totalPages, setTotalPages] = useState(Math.max(1, props.initialTotalPages));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(props.initialError || '');
+  const [sortOrder, setSortOrder] = useState(props.initialOrder || 'latest');
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState(props.initialSearch);
   const prefetching = useRef(new Set<string>());
 
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
-  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, order: props.initialOrder, gay: effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay, lq: settings.lq }), [effectiveQuery, page, settings.gay, settings.lq, props.initialOrder]);
+  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, order: sortOrder, gay: effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay, lq: settings.lq }), [effectiveQuery, page, settings.gay, settings.lq, sortOrder]);
 
   useEffect(() => {
     fetch('/api/settings/public', { cache: 'no-store', headers: { Accept: 'application/json' } })
@@ -100,7 +109,7 @@ export default function VideoPortalClient(props: Props) {
       query: effectiveQuery,
       page: String(targetPage),
       per_page: '50',
-      order: props.initialOrder || 'latest',
+      order: sortOrder || 'latest',
       thumbsize: 'small',
       gay: String(effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay),
       lq: String(settings.lq ?? 1),
@@ -120,7 +129,7 @@ export default function VideoPortalClient(props: Props) {
       });
       return;
     }
-    if (page === props.initialPage && activeSearch === props.initialSearch) return;
+    if (page === props.initialPage && activeSearch === props.initialSearch && sortOrder === props.initialOrder) return;
 
     const controller = new AbortController();
     // Loading state intentionally tracks the external fetch lifecycle.
@@ -143,7 +152,15 @@ export default function VideoPortalClient(props: Props) {
       .catch((err) => { if (err?.name !== 'AbortError') { setVideos([]); setTotalCount(0); setTotalPages(1); setError(err instanceof Error ? err.message : 'Unable to load videos'); } })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [requestKey, page, activeSearch, props.initialPage, props.initialSearch]);
+  }, [requestKey, page, activeSearch, props.initialPage, props.initialSearch, sortOrder]);
+
+  const changeSort = (order: string) => {
+    setSortOrder(order); setPage(1); setError('');
+    const params = new URLSearchParams(window.location.search);
+    if (activeSearch) params.set('category', activeSearch);
+    params.set('order', order);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+  };
 
   const changeCategory = (category: string) => {
     setMenuOpen(false); setSearchOpen(false); setActiveSearch(category); setPage(1); setError('');
@@ -164,6 +181,7 @@ export default function VideoPortalClient(props: Props) {
       const params = new URLSearchParams(window.location.search);
       setPage(match ? Math.max(1, Number(match[1])) : 1);
       setActiveSearch(params.get('category') || '');
+      setSortOrder(params.get('order') || props.initialOrder || 'latest');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -171,7 +189,10 @@ export default function VideoPortalClient(props: Props) {
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || next === page) return;
-    const href = `${next === 1 ? '/' : `/p/${next}`}${activeSearch ? `?category=${encodeURIComponent(activeSearch)}` : ''}`;
+    const params = new URLSearchParams();
+    if (activeSearch) params.set('category', activeSearch);
+    if (sortOrder) params.set('order', sortOrder);
+    const href = `${next === 1 ? '/' : `/p/${next}`}${params.toString() ? `?${params.toString()}` : ''}`;
     window.location.assign(href);
   };
 
@@ -195,6 +216,7 @@ export default function VideoPortalClient(props: Props) {
 
     <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
       <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight capitalize sm:text-3xl">{activeSearch ? `${activeSearch} adult videos` : 'Free Adult Videos, Porn Videos & Trending Clips'}</h1><p className="mt-1 text-sm text-zinc-500">Browse free adult videos, trending clips, popular categories, and fresh uploads.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
+      <section className="mb-5 border-b border-zinc-200" aria-label="Search result filters"><div className="flex items-center gap-1 border-b border-zinc-100"><button type="button" className="border-b-2 border-red-600 px-3 py-2 text-sm font-semibold text-red-700">Free {totalCount.toLocaleString()}</button><button type="button" disabled className="px-3 py-2 text-sm text-zinc-400" title="Premium results coming soon">Premium</button><span className="ml-auto hidden text-xs text-zinc-400 sm:block">{activeSearch ? `Results for ${activeSearch}` : 'Latest results'}</span></div><div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 text-sm"><span className="font-medium text-zinc-500">Sort by:</span>{SORT_OPTIONS.map(([value, label], index) => <button key={`${value}-${label}`} type="button" onClick={() => changeSort(value)} className={`border-b-2 pb-1 transition ${sortOrder === value || (!sortOrder && index === 0) ? 'border-red-600 font-semibold text-zinc-900' : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900'}`}>{label}</button>)}</div></section>
       {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
       {loading && <div className="mb-4 text-sm text-zinc-500">Loading videos…</div>}
       <div className="relative min-h-[240px]">
