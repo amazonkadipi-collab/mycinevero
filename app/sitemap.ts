@@ -46,8 +46,7 @@ async function getTotalVideos() {
   const first = await fetchApiPage(1);
   const total = Number(first.total_count || 0);
   const pages = Number(first.total_pages || 0);
-  if (total > 0) return { total, pages: pages || Math.ceil(total / API_PAGE_SIZE) };
-  return { total: 0, pages: 0 };
+  return { total, pages: pages || (total > 0 ? Math.ceil(total / API_PAGE_SIZE) : 0) };
 }
 
 export const revalidate = 3600;
@@ -59,30 +58,11 @@ export async function generateSitemaps() {
 }
 
 export default async function sitemap({ id }: { id?: number }): Promise<MetadataRoute.Sitemap> {
-  const baseEntries: MetadataRoute.Sitemap = [
-    { url: SITE_URL, changeFrequency: 'hourly', priority: 1 },
-    ...categories.map((category) => ({
-      url: `${SITE_URL}/?category=${encodeURIComponent(category)}`,
-      changeFrequency: 'hourly' as const,
-      priority: 0.8,
-    })),
-  ];
-
   const sitemapId = Math.max(0, Number(id || 0));
   const firstVideoIndex = sitemapId * MAX_URLS_PER_SITEMAP;
   const firstPage = Math.floor(firstVideoIndex / API_PAGE_SIZE) + 1;
-  const lastVideoIndex = firstVideoIndex + MAX_URLS_PER_SITEMAP;
-  const lastPage = Math.ceil(lastVideoIndex / API_PAGE_SIZE);
-
-  if (sitemapId === 0) {
-    const first = await fetchApiPage(1);
-    const videos = first.videos || [];
-    const entries = videos.map((video) => videoEntry(video)).filter(Boolean) as MetadataRoute.Sitemap;
-    return [...baseEntries, ...entries];
-  }
-
-  const pages: number[] = [];
-  for (let page = firstPage; page <= lastPage; page++) pages.push(page);
+  const lastPage = Math.ceil((firstVideoIndex + MAX_URLS_PER_SITEMAP) / API_PAGE_SIZE);
+  const pages = Array.from({ length: Math.max(0, lastPage - firstPage + 1) }, (_, index) => firstPage + index);
 
   const videos: ApiVideo[] = [];
   for (let i = 0; i < pages.length; i += 5) {
@@ -92,7 +72,19 @@ export default async function sitemap({ id }: { id?: number }): Promise<Metadata
 
   const startOffset = firstVideoIndex - (firstPage - 1) * API_PAGE_SIZE;
   const selected = videos.slice(Math.max(0, startOffset), startOffset + MAX_URLS_PER_SITEMAP);
-  return selected.map((video) => videoEntry(video)).filter(Boolean) as MetadataRoute.Sitemap;
+  const videoEntries = selected.map(videoEntry).filter(Boolean) as MetadataRoute.Sitemap;
+
+  if (sitemapId !== 0) return videoEntries;
+
+  const baseEntries: MetadataRoute.Sitemap = [
+    { url: SITE_URL, changeFrequency: 'hourly', priority: 1 },
+    ...categories.map((category) => ({
+      url: `${SITE_URL}/?category=${encodeURIComponent(category)}`,
+      changeFrequency: 'hourly' as const,
+      priority: 0.8,
+    })),
+  ];
+  return [...baseEntries, ...videoEntries];
 }
 
 function videoEntry(video: ApiVideo): MetadataRoute.Sitemap[number] | null {
