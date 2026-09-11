@@ -209,7 +209,7 @@ export default function VideoPortalClient(props: Props) {
     event.preventDefault();
     const query = searchDraft.trim();
     setMenuOpen(false); setSearchOpen(false); setSuggestionsOpen(false); setActiveSearch(query); setPage(1); setError('');
-    window.history.pushState({}, '', query ? `/?k=${encodeURIComponent(query)}` : '/');
+    window.history.pushState({}, '', query ? `/?${new URLSearchParams({ k: query }).toString()}` : '/');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
