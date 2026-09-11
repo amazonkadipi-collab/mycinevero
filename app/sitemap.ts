@@ -1,41 +1,42 @@
 import type { MetadataRoute } from 'next';
-import { getPortalSettings } from '@/lib/site-settings';
 
 const SITE_URL = 'https://elovex.vercel.app';
 const MAX_URLS_PER_SITEMAP = 45000;
 const API_PAGE_SIZE = 1000;
 const MAX_CATEGORY_PAGES = 100;
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 20000;
 
 const categories = ['amateur', 'anal', 'asian', 'bbw', 'big tits', 'blonde', 'brunette', 'cosplay', 'couples', 'gay', 'lesbian', 'mature', 'milf', 'public', 'redhead', 'solo', 'threesome', 'vintage', 'webcam'];
 
 type ApiVideo = { id?: string; added?: string };
 type ApiResult = { videos?: ApiVideo[]; total_count?: number; total_pages?: number };
 
-function endpoint(base: string, path: string) {
-  const url = new URL(base);
-  url.pathname = `${url.pathname.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
-  return url;
-}
-
+/**
+ * Use the site's hardened video-search proxy instead of calling the upstream
+ * provider directly. This keeps sitemap generation consistent with the
+ * production search flow (JSON/XML parsing, retries and provider fallback).
+ */
 async function fetchApiPage(page: number, category?: string): Promise<ApiResult> {
-  const settings = await getPortalSettings();
-  const url = endpoint(settings.api_base_url, settings.api_search_path);
-  url.searchParams.set('query', category || settings.query || 'all');
+  const url = new URL('/api/videos/search', SITE_URL);
   url.searchParams.set('page', String(page));
   url.searchParams.set('per_page', String(API_PAGE_SIZE));
-  url.searchParams.set('order', settings.order || 'latest');
+  url.searchParams.set('order', 'latest');
   url.searchParams.set('thumbsize', 'small');
-  url.searchParams.set('gay', String(category?.toLowerCase() === 'gay' ? 2 : settings.gay || 0));
-  url.searchParams.set('lq', String(settings.lq || 1));
-  url.searchParams.set('format', 'json');
+  url.searchParams.set('lq', '1');
+  url.searchParams.set('query', category || 'all');
+  if (category) url.searchParams.set('category', category);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json, application/xml;q=0.9, text/xml;q=0.8' }, signal: controller.signal });
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
     if (!response.ok) return {};
     const text = (await response.text()).replace(/^\uFEFF/, '').trim();
+    if (!text) return {};
     try {
       return JSON.parse(text) as ApiResult;
     } catch {
@@ -69,7 +70,9 @@ export const revalidate = 3600;
 
 export async function generateSitemaps() {
   const { total } = await getTotalVideos();
-  const sitemapCount = Math.max(1, Math.ceil((total || 100000) / MAX_URLS_PER_SITEMAP));
+  // Never manufacture 100k URLs when the API could not be reached. One
+  // sitemap containing the homepage/categories is preferable to empty shards.
+  const sitemapCount = Math.max(1, Math.ceil(total / MAX_URLS_PER_SITEMAP));
   return Array.from({ length: sitemapCount }, (_, id) => ({ id }));
 }
 
