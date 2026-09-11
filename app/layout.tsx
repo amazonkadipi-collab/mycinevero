@@ -10,7 +10,11 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://elovex.vercel.app'),
   title: { default: 'Elovex – Free Adult Videos & Trending Clips', template: '%s | Elovex' },
   description: 'Discover free adult videos, trending clips, popular searches, and fresh daily entertainment on Elovex. Fast browsing, related videos, and dedicated watch pages.',
-  keywords: ['Elovex', 'free adult videos', 'adult video search', 'trending adult videos', 'popular videos', 'watch videos online', 'new videos daily'],
+  keywords: ['Elovex', 'adult video discovery', 'age-restricted video search', 'video categories', 'watch pages'],
+  applicationName: 'Elovex',
+  alternates: { canonical: '/', languages: { en: '/', fr: '/fr', 'x-default': '/' } },
+  robots: { index: true, follow: true, 'max-image-preview': 'large' },
+  other: { rating: 'adult', 'rating:content': 'adult' },
   openGraph: {
     title: 'Elovex – Free Adult Videos & Trending Clips',
     description: 'Discover free adult videos, trending clips, and fresh daily entertainment on Elovex.',

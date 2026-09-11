@@ -114,6 +114,7 @@ export default async function sitemap({ id }: { id?: number }): Promise<Metadata
 
   return [
     { url: SITE_URL, changeFrequency: 'hourly', priority: 1 },
+    { url: `${SITE_URL}/fr`, changeFrequency: 'hourly', priority: 0.8 },
     ...categoryEntries,
     ...videoEntries,
   ];
