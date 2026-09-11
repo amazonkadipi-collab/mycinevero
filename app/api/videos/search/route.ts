@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 
 const ORDERS = new Set(['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly']);
 const THUMB_SIZES = new Set(['small', 'medium', 'big']);
+const responseCache = new Map<string, { expiresAt: number; body: unknown }>();
+const CACHE_TTL_MS = 60_000;
 
 function buildEndpoint(base: string, path: string) {
   const url = new URL(base);
@@ -49,6 +51,12 @@ export async function GET(request: NextRequest) {
     url.searchParams.set('lq', String(lq));
     url.searchParams.set('format', 'json');
 
+    const cacheKey = url.toString();
+    const cached = responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return NextResponse.json(cached.body, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
+    }
+
     const controller = new AbortController();
     const timeoutMs = typeof settings.api_timeout_ms === 'number' ? settings.api_timeout_ms : 10000;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -73,7 +81,9 @@ export async function GET(request: NextRequest) {
           { status: 502 },
         );
       }
-      return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } });
+      responseCache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, body });
+      if (responseCache.size > 100) responseCache.delete(responseCache.keys().next().value as string);
+      return NextResponse.json(body, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
     } finally {
       clearTimeout(timeout);
     }
