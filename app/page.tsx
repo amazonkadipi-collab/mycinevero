@@ -22,7 +22,7 @@ type VideoCache = { videos: VideoItem[]; totalCount: number; totalPages: number;
 
 const DEFAULTS: PortalSettings = { query: 'all', order: 'latest', per_page: 50, thumbsize: 'small', gay: 0, lq: 1 };
 const NAV = [['latest', 'Latest'], ['most-popular', 'Most Popular'], ['top-weekly', 'Trending'], ['top-rated', 'Top Rated']];
-const CACHE_PREFIX = 'elovex:videos:v7:';
+const CACHE_PREFIX = 'elovex:videos:v8:';
 const CACHE_TTL = 2 * 60 * 1000;
 
 function readVideoCache(key: string): VideoCache | null {
@@ -84,10 +84,9 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
   }, []);
 
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
-  // Always display up to 50 videos per page, without prefetching their detail pages.
-  const perPage = Math.min(50, Math.max(1, Number(settings.per_page) || 50));
+  const perPage = 50;
   const thumbsize = 'small';
-  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize, gay: settings.gay ?? 0, lq: settings.lq ?? 1 }), [effectiveQuery, page, perPage, order, settings.gay, settings.lq]);
+  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize, gay: settings.gay ?? 0, lq: settings.lq ?? 1 }), [effectiveQuery, page, order, settings.gay, settings.lq]);
 
   useEffect(() => {
     const cached = readVideoCache(requestKey);
@@ -95,8 +94,15 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
     const controller = new AbortController();
     setError('');
     if (cached) {
-      setVideos(cached.videos); setTotalCount(cached.totalCount); setTotalPages(Math.max(1, cached.totalPages)); setLoading(false);
-    } else { setVideos([]); setLoading(true); }
+      setVideos(cached.videos);
+      setTotalCount(cached.totalCount);
+      setTotalPages(Math.max(1, cached.totalPages));
+      setLoading(false);
+    } else {
+      // Keep the current grid visible while the next page is fetched.
+      // This makes pagination feel instant instead of showing a blank screen.
+      setLoading(true);
+    }
 
     const params = new URLSearchParams({ q: effectiveQuery, page: String(page), per_page: String(perPage), order, thumbsize, gay: String(settings.gay ?? 0), lq: String(settings.lq ?? 1), format: 'json' });
     fetch(`/api/videos/search?${params.toString()}`, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json' } })
@@ -113,7 +119,7 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [requestKey, effectiveQuery, page, perPage, order, settings.gay, settings.lq]);
+  }, [requestKey, effectiveQuery, page, order, settings.gay, settings.lq]);
 
   useEffect(() => { if (page > totalPages && totalPages >= 1) setPage(totalPages); }, [page, totalPages]);
 
@@ -121,7 +127,7 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
   const changeOrder = (nextOrder: string) => { if (nextOrder === order) return; setOrder(nextOrder); setPage(1); };
 
   const goToPage = (nextPage: number) => {
-    if (nextPage < 1 || nextPage > totalPages || nextPage === page || loading) return;
+    if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
     setPage(nextPage);
     const path = nextPage === 1 ? '/' : `/p/${nextPage}`;
     window.history.pushState({ page: nextPage }, '', path);
@@ -159,11 +165,11 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
         <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{activeSearch ? `Results for “${activeSearch}”` : 'Discover trending videos'}</h1><p className="mt-1 text-sm text-zinc-500">Fresh videos and popular content.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
         {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
         <div className="relative min-h-[240px]">
-          {videos.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.map((video, index) => { const image = thumbnail(video); return <Link prefetch={false} key={video.id ?? `${page}-${index}`} href={`/videos/${video.id}`} className="group overflow-hidden rounded-lg border border-zinc-200 bg-white"><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Video'} loading="lazy" fetchPriority="low" decoding="async" className="h-full w-full object-cover" />}<span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration ? <><Clock className="h-3 w-3" />{video.length_min || video.duration}</> : 'Watch'}</span></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-zinc-800">{video.title || 'Untitled video'}</h2><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{video.rate ?? '—'}</span></div></div></Link>; })}</div>}
+          {videos.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.slice(0, 50).map((video, index) => { const image = thumbnail(video); const videoId = video.id; const card = <><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Video'} loading="lazy" fetchPriority="low" decoding="async" className="h-full w-full object-cover" />}<span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration ? <><Clock className="h-3 w-3" />{video.length_min || video.duration}</> : 'Watch'}</span></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-zinc-800">{video.title || 'Untitled video'}</h2><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{video.rate ?? '—'}</span></div></div></>; return videoId ? <a key={videoId} href={`/videos/${encodeURIComponent(String(videoId))}`} className="group overflow-hidden rounded-lg border border-zinc-200 bg-white">{card}</a> : <div key={`${page}-${index}`} className="overflow-hidden rounded-lg border border-zinc-200 bg-white">{card}</div>; })}</div>}
           {loading && videos.length === 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{Array.from({ length: 10 }).map((_, index) => <div key={index} className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50"><div className="aspect-video bg-zinc-200" /><div className="p-3"><div className="h-4 w-full rounded bg-zinc-200" /><div className="mt-2 h-3 w-2/3 rounded bg-zinc-200" /></div></div>)}</div>}
           {!loading && videos.length === 0 && !error && <div className="rounded-lg border border-dashed border-zinc-300 p-12 text-center"><p className="font-medium">Nothing here yet</p><p className="mt-1 text-sm text-zinc-500">Try another search or category.</p></div>}
         </div>
-        {totalPages > 1 && <footer className="mt-6 flex flex-wrap items-center justify-center gap-2 border-t border-zinc-200 pt-4"><button disabled={loading || page <= 1} onClick={() => goToPage(page - 1)} className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm disabled:opacity-30">Previous</button>{pageNumbers.map((number, index) => { const previous = pageNumbers[index - 1]; const showGap = previous !== undefined && number - previous > 1; return <span key={number} className="flex items-center gap-2">{showGap && <span className="px-1 text-zinc-400">…</span>}<button disabled={loading} onClick={() => goToPage(number)} aria-current={number === page ? 'page' : undefined} className={`min-w-9 rounded-md border px-3 py-1.5 text-sm ${number === page ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50'} disabled:cursor-wait disabled:opacity-60`}>{number}</button></span>; })}<button disabled={loading || page >= totalPages} onClick={() => goToPage(page + 1)} className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm disabled:opacity-30">Next</button></footer>}
+        {totalPages > 1 && <footer className="mt-6 flex flex-wrap items-center justify-center gap-2 border-t border-zinc-200 pt-4"><button disabled={loading || page <= 1} onClick={() => goToPage(page - 1)} className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm disabled:opacity-30">Previous</button>{pageNumbers.map((number, index) => { const previous = pageNumbers[index - 1]; const showGap = previous !== undefined && number - previous > 1; return <span key={number} className="flex items-center gap-2">{showGap && <span className="px-1 text-zinc-400">…</span>}<button disabled={number === page} onClick={() => goToPage(number)} aria-current={number === page ? 'page' : undefined} className={`min-w-9 rounded-md border px-3 py-1.5 text-sm ${number === page ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50'}`}>{number}</button></span>; })}<button disabled={loading || page >= totalPages} onClick={() => goToPage(page + 1)} className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm disabled:opacity-30">Next</button></footer>}
         {totalPages > 1 && <p className="mt-2 text-center text-xs text-zinc-400">Page {page} of {totalPages}</p>}
       </main>
     </div>
