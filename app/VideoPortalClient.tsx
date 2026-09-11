@@ -103,6 +103,7 @@ export default function VideoPortalClient(props: Props) {
   const [preview, setPreview] = useState<{ id: string; index: number } | null>(null);
   const prefetching = useRef(new Set<string>());
   const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewDelay = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
   const searchSuggestions = useMemo(() => {
@@ -248,14 +249,19 @@ export default function VideoPortalClient(props: Props) {
   const startPreview = (video: VideoItem) => {
     const id = String(video.id || '');
     const frames = previewThumbs(video);
-    if (!id || frames.length < 2) return;
+    const previewVideo = (video as VideoItem & { preview?: string; preview_url?: string; preview_mp4?: string; pvv?: string }).preview || (video as VideoItem & { preview_url?: string }).preview_url || (video as VideoItem & { preview_mp4?: string }).preview_mp4 || (video as VideoItem & { pvv?: string }).pvv || '';
+    if (!id || (frames.length < 2 && !previewVideo)) return;
     if (previewTimer.current) clearInterval(previewTimer.current);
-    setPreview({ id, index: 1 });
+    if (previewDelay.current) clearTimeout(previewDelay.current);
+    // XVIDEOS waits briefly over the thumbnail before replacing its poster with preview media.
+    previewDelay.current = setTimeout(() => setPreview({ id, index: 0 }), 350);
     previewTimer.current = setInterval(() => setPreview((current) => current?.id === id ? { id, index: (current.index + 1) % frames.length } : current), 700);
   };
   const stopPreview = () => {
     if (previewTimer.current) clearInterval(previewTimer.current);
+    if (previewDelay.current) clearTimeout(previewDelay.current);
     previewTimer.current = null;
+    previewDelay.current = null;
     setPreview(null);
   };
 
