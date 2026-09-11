@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const url = buildEndpoint(settings.api_base_url, settings.api_search_path);
+    let url = buildEndpoint(settings.api_base_url, settings.api_search_path);
     const input = request.nextUrl.searchParams;
     const category = (input.get('category') || '').trim().slice(0, 80);
     const query = (category || input.get('query') || input.get('q') || settings.query || 'all').trim().slice(0, 200) || 'all';
