@@ -1,123 +1,45 @@
 'use client';
-
-import type { FormEvent, ReactNode } from 'react';
+import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, KeyRound, LogIn, LogOut, RefreshCw, Save, Search, Server, Settings2, SlidersHorizontal } from 'lucide-react';
+import { BarChart3, ArrowLeft, KeyRound, LogIn, LogOut, RefreshCw, Save, Search, Server, ShieldCheck, Globe2, Monitor, Smartphone, Chrome } from 'lucide-react';
 
-type Settings = {
-  query: string; order: string; per_page: number | ''; thumbsize: string; gay: number | ''; lq: number | ''; format: string;
-  method: string; video_id: string; api_base_url: string; api_search_path: string; api_details_path: string;
-  api_timeout_ms: number | ''; api_format: string; items_per_page: number | ''; cache_duration: number | '';
-};
+type Settings = { query:string; order:string; per_page:number|''; thumbsize:string; gay:number|''; lq:number|''; format:string; method:string; video_id:string; api_base_url:string; api_search_path:string; api_details_path:string; api_timeout_ms:number|''; api_format:string; items_per_page:number|''; cache_duration:number|''; google_site_verification:string; bing_site_verification:string; yandex_site_verification:string; naver_site_verification:string; baidu_site_verification:string; indexnow_key:string };
+const EMPTY:Settings={query:'all',order:'latest',per_page:24,thumbsize:'medium',gay:0,lq:1,format:'json',method:'search',video_id:'',api_base_url:'https://www.eporner.com/api/v2',api_search_path:'/video/search',api_details_path:'/video/id',api_timeout_ms:10000,api_format:'json',items_per_page:24,cache_duration:0,google_site_verification:'',bing_site_verification:'',yandex_site_verification:'',naver_site_verification:'',baidu_site_verification:'',indexnow_key:''};
+const input='w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500/60';
+const orders=['latest','longest','shortest','top-rated','most-popular','top-weekly','top-monthly']; const pages=[12,24,48,96]; const thumbs=['small','medium','big']; const formats=['json','xml'];
 
-const EMPTY: Settings = {
-  query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1, format: 'json', method: 'search', video_id: '',
-  api_base_url: 'https://www.eporner.com/api/v2', api_search_path: '/video/search', api_details_path: '/video/id',
-  api_timeout_ms: 10000, api_format: 'json', items_per_page: 24, cache_duration: 0,
-};
-const ORDERS = ['latest', 'longest', 'shortest', 'top-rated', 'most-popular', 'top-weekly', 'top-monthly'];
-const PAGES = [12, 24, 48, 96];
-const THUMBS = ['small', 'medium', 'big'];
-const FILTERS = [0, 1, 2];
-const FORMATS = ['json', 'xml'];
-const METHODS = ['search', 'id', 'removed'];
-const CACHE = [0, 60, 300, 3600];
-const TIMEOUTS = [5000, 10000, 15000, 30000, 60000];
+type Stat={name:string;count:number}; type Analytics={pageViews:number;uniqueVisitors:number;countries:Stat[];devices:Stat[];browsers:Stat[];operatingSystems:Stat[];pages:Stat[];referrers:Stat[];dailyVisitors:{date:string;views:number}[];periodDays:number};
 
-const inputClass = 'w-full rounded-xl border border-white/10 bg-black/20 px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-red-500/70 focus:bg-black/30 focus:ring-2 focus:ring-red-500/10';
-const selectClass = `${inputClass} cursor-pointer appearance-none`;
-
-export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [settings, setSettings] = useState<Settings>(EMPTY);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/admin/login', { cache: 'no-store' }).then(r => r.json()).then(d => setAuthenticated(Boolean(d.authenticated))).catch(() => setAuthenticated(false));
-  }, []);
-
-  useEffect(() => { if (authenticated) loadSettings(); }, [authenticated]);
-
-  async function loadSettings() {
-    setLoading(true); setError('');
-    try {
-      const response = await fetch('/api/settings', { cache: 'no-store' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load settings.');
-      setSettings({ ...EMPTY, ...(data.settings || {}) });
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to load settings.'); }
-    finally { setLoading(false); }
-  }
-
-  function update(key: keyof Settings, value: string | number) {
-    setSettings(current => ({ ...current, [key]: value })); setMessage(''); setError('');
-  }
-
-  async function login(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError('');
-    try {
-      const response = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Invalid credentials');
-      setUsername(''); setPassword(''); setAuthenticated(true);
-    } catch (err) { setError(err instanceof Error ? err.message : 'Invalid credentials'); }
-    finally { setBusy(false); }
-  }
-
-  async function logout() {
-    await fetch('/api/admin/login', { method: 'DELETE' }); setAuthenticated(false); setSettings(EMPTY);
-  }
-
-  async function save(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setMessage(''); setError('');
-    try {
-      const response = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to save settings.');
-      setSettings({ ...EMPTY, ...(data.settings || {}) }); setMessage('All settings saved successfully!');
-    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to save settings.'); }
-    finally { setBusy(false); }
-  }
-
-  const header = (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600/15 ring-1 ring-red-500/20"><Settings2 className="h-4 w-4 text-red-400" /></div><div><div className="text-sm font-black tracking-[0.18em] text-white">ADMIN</div><div className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">Complete API Settings</div></div></div>
-        {authenticated && <div className="flex items-center gap-2"><Link href="/" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-zinc-400 hover:bg-white/5 hover:text-white sm:flex"><ArrowLeft className="h-3.5 w-3.5" /> Portal</Link><button type="button" onClick={logout} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-zinc-400 hover:border-red-500/30 hover:bg-red-500/5 hover:text-red-300"><LogOut className="h-3.5 w-3.5" /> Logout</button></div>}
-      </div>
-    </header>
-  );
-
-  if (authenticated === null) return <div className="min-h-screen bg-[#0a0a0a]" />;
-
-  if (!authenticated) return (
-    <div className="min-h-screen bg-[#0a0a0a] text-zinc-200">{header}<main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12"><form onSubmit={login} className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-6 shadow-2xl shadow-black/40"><div className="mb-7 text-center"><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600/10 ring-1 ring-red-500/20"><KeyRound className="h-6 w-6 text-red-400" /></div><h1 className="text-2xl font-bold text-white">Admin Dashboard</h1><p className="mt-2 text-sm text-zinc-500">Sign in to manage all API settings.</p></div><div className="space-y-4"><Field label="Username"><input required value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" autoComplete="username" className={inputClass} /></Field><Field label="Password"><input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Admin password" autoComplete="current-password" className={inputClass} /></Field></div><button disabled={busy} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-500 disabled:opacity-50"><LogIn className="h-4 w-4" />{busy ? 'Signing in…' : 'Sign in'}</button>{error && <Alert text={error} />}</form></main></div>
-  );
-
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-zinc-200">{header}
-      <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10">
-        <div className="mb-8"><div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-red-400">Elovex Administration</div><h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Site & API Settings</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Manage Elovex content discovery, provider connection, and display settings from one place.</p></div>
-        {loading && <div className="mb-5 flex items-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-4 py-3 text-sm text-zinc-500"><RefreshCw className="h-4 w-4 animate-spin" /> Loading saved settings…</div>}
-        {message && <Alert success text={message} />}{error && <Alert text={error} />}
-        <form onSubmit={save} className="space-y-5">
-          <Section icon={<Search />} number="01" title="Search Settings" description="Main search parameters sent to the configured provider."><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Search Query" full><input value={settings.query} onChange={e => update('query', e.target.value)} placeholder="Enter search query..." className={inputClass} /></Field><Field label="Order"><Select value={settings.order} placeholder="Select order..." options={ORDERS} onChange={v => update('order', v)} /></Field><Field label="Per Page"><Select value={settings.per_page} placeholder="Select per page..." options={PAGES} onChange={v => update('per_page', v === '' ? '' : Number(v))} /></Field><Field label="Thumb Size"><Select value={settings.thumbsize} placeholder="Select thumb size..." options={THUMBS} onChange={v => update('thumbsize', v)} /></Field><Field label="Filter Option A"><Select value={settings.gay} placeholder="Select option..." options={FILTERS} onChange={v => update('gay', v === '' ? '' : Number(v))} /></Field><Field label="Filter Option B"><Select value={settings.lq} placeholder="Select option..." options={FILTERS} onChange={v => update('lq', v === '' ? '' : Number(v))} /></Field><Field label="Response Format"><Select value={settings.format} placeholder="Select format..." options={FORMATS} onChange={v => update('format', v)} /></Field></div></Section>
-          <Section icon={<SlidersHorizontal />} number="02" title="API Methods" description="Select how the application calls the provider and which identifier it uses."><div className="grid gap-4 sm:grid-cols-2"><Field label="API Method"><Select value={settings.method} placeholder="Select method..." options={METHODS} onChange={v => update('method', v)} /></Field><Field label="Video ID"><input value={settings.video_id} onChange={e => update('video_id', e.target.value)} placeholder="Enter video ID..." className={inputClass} /></Field></div></Section>
-          <Section icon={<Server />} number="03" title="API Configuration" description="Full connection, endpoint and response configuration. These fields are now editable from Admin."><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Field label="API Base URL" full><input type="url" value={settings.api_base_url} onChange={e => update('api_base_url', e.target.value)} placeholder="https://example.com/api/v2/" className={inputClass} /></Field><Field label="Search Path"><input value={settings.api_search_path} onChange={e => update('api_search_path', e.target.value)} placeholder="/search" className={inputClass} /></Field><Field label="Details Path"><input value={settings.api_details_path} onChange={e => update('api_details_path', e.target.value)} placeholder="/details" className={inputClass} /></Field><Field label="API Timeout"><Select value={settings.api_timeout_ms} placeholder="Select timeout..." options={TIMEOUTS} suffix=" ms" onChange={v => update('api_timeout_ms', v === '' ? '' : Number(v))} /></Field><Field label="API Response Format"><Select value={settings.api_format} placeholder="Select format..." options={FORMATS} onChange={v => update('api_format', v)} /></Field><Field label="Items Per Page"><Select value={settings.items_per_page} placeholder="Select items per page..." options={PAGES} onChange={v => update('items_per_page', v === '' ? '' : Number(v))} /></Field><Field label="Cache Duration"><Select value={settings.cache_duration} placeholder="Select cache duration (seconds)..." options={CACHE} suffix=" seconds" onChange={v => update('cache_duration', v === '' ? '' : Number(v))} /></Field></div></Section>
-          <div className="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-zinc-600">All configurable portal/API settings are managed from this page and saved to Supabase.</p><div className="flex gap-2"><button type="button" onClick={loadSettings} disabled={busy || loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#141414] px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.06] disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Reload</button><button type="submit" disabled={busy || loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-950/20 hover:bg-red-500 disabled:opacity-50"><Save className="h-4 w-4" /> {busy ? 'Saving…' : 'Save All Settings'}</button></div></div>
-        </form>
-      </main>
-    </div>
-  );
+export default function AdminPage(){
+ const [auth,setAuth]=useState<boolean|null>(null),[user,setUser]=useState(''),[pass,setPass]=useState(''),[settings,setSettings]=useState(EMPTY),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[error,setError]=useState(''),[analytics,setAnalytics]=useState<Analytics|null>(null),[days,setDays]=useState(30),[analyticsLoading,setAnalyticsLoading]=useState(false);
+ useEffect(()=>{fetch('/api/admin/login',{cache:'no-store'}).then(r=>r.json()).then(d=>setAuth(Boolean(d.authenticated))).catch(()=>setAuth(false))},[]);
+ useEffect(()=>{if(auth){loadSettings();loadAnalytics(days)}},[auth]);
+ async function loadSettings(){try{const r=await fetch('/api/settings',{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error);setSettings({...EMPTY,...d.settings})}catch(e){setError(e instanceof Error?e.message:'Failed to load settings')}}
+ async function loadAnalytics(period=days){setAnalyticsLoading(true);try{const r=await fetch(`/api/admin/analytics?days=${period}`,{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error);setAnalytics(d)}catch(e){setError(e instanceof Error?e.message:'Failed to load analytics')}finally{setAnalyticsLoading(false)}}
+ const update=(k:keyof Settings,v:string|number)=>{setSettings(s=>({...s,[k]:v}));setMsg('');setError('')};
+ async function login(e:FormEvent){e.preventDefault();setBusy(true);try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});const d=await r.json();if(!r.ok)throw Error(d.error||'Invalid credentials');setAuth(true)}catch(e){setError(e instanceof Error?e.message:'Login failed')}finally{setBusy(false)}}
+ async function save(e:FormEvent){e.preventDefault();setBusy(true);setMsg('');try{const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});const d=await r.json();if(!r.ok)throw Error(d.error);setSettings({...EMPTY,...d.settings});setMsg('Settings saved successfully')}catch(e){setError(e instanceof Error?e.message:'Save failed')}finally{setBusy(false)}}
+ async function logout(){await fetch('/api/admin/login',{method:'DELETE'});setAuth(false)}
+ if(auth===null)return <div className="min-h-screen bg-[#0a0a0a]"/>;
+ if(!auth)return <div className="min-h-screen bg-[#0a0a0a] text-zinc-200"><Header loggedIn={false}/><main className="flex min-h-[calc(100vh-4rem)] items-center justify-center"><form onSubmit={login} className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#141414] p-6"><div className="text-center"><KeyRound className="mx-auto mb-4 text-red-400"/><h1 className="text-2xl font-bold text-white">Admin Dashboard</h1><p className="mt-2 text-sm text-zinc-500">Sign in to manage the portal.</p></div><input className={`${input} mt-6`} value={user} onChange={e=>setUser(e.target.value)} placeholder="Username" autoComplete="username"/><input className={`${input} mt-3`} type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Password" autoComplete="current-password"/><button disabled={busy} className="mt-4 w-full rounded-xl bg-red-600 px-4 py-3 font-bold text-white disabled:opacity-50"><LogIn className="mr-2 inline h-4 w-4"/>{busy?'Signing in…':'Sign in'}</button>{error&&<p className="mt-3 text-sm text-red-300">{error}</p>}</form></main></div>;
+ return <div className="min-h-screen bg-[#0a0a0a] text-zinc-200"><Header loggedIn onLogout={logout}/><main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+  <div><p className="text-xs font-bold uppercase tracking-[.2em] text-red-400">Elovex Administration</p><h1 className="mt-2 text-3xl font-black text-white">Admin Dashboard</h1><p className="mt-2 text-sm text-zinc-500">Analytics, SEO verification, provider configuration and portal settings.</p></div>
+  <section className="rounded-2xl border border-white/10 bg-[#141414] p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 text-lg font-bold text-white"><BarChart3 className="text-red-400"/> Visitor Analytics</h2><p className="text-sm text-zinc-500">Country, city, device, browser, OS, pages, referrers and unique visitors.</p></div><div className="flex gap-2"><select className={input} value={days} onChange={e=>{const d=Number(e.target.value);setDays(d);loadAnalytics(d)}}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select><button onClick={()=>loadAnalytics()} className="rounded-xl border border-white/10 px-3 text-zinc-300"><RefreshCw className={analyticsLoading?'animate-spin':''} size={16}/></button></div></div>
+   {analytics&&<><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric title="Page views" value={analytics.pageViews}/><Metric title="Unique visitors" value={analytics.uniqueVisitors}/><Metric title="Top country" value={analytics.countries[0]?.name||'—'}/><Metric title="Top device" value={analytics.devices[0]?.name||'—'}/></div><div className="mt-5 grid gap-4 lg:grid-cols-2"><Stats title="Countries" icon={<Globe2 size={16}/>} data={analytics.countries}/><Stats title="Devices" icon={<Smartphone size={16}/>} data={analytics.devices}/><Stats title="Browsers" icon={<Chrome size={16}/>} data={analytics.browsers}/><Stats title="Operating systems" icon={<Monitor size={16}/>} data={analytics.operatingSystems}/><Stats title="Top pages" data={analytics.pages}/><Stats title="Traffic sources" data={analytics.referrers.filter(x=>x.name!=='Unknown')}/></div><div className="mt-4 rounded-xl border border-white/10 p-4"><h3 className="mb-3 font-semibold text-white">Daily traffic</h3><div className="flex h-28 items-end gap-1 overflow-x-auto">{analytics.dailyVisitors.map(d=><div key={d.date} title={`${d.date}: ${d.views}`} className="min-w-2 flex-1 rounded-t bg-red-500/70" style={{height:`${Math.max(5,(d.views/Math.max(...analytics.dailyVisitors.map(x=>x.views),1))*100)}%`}}/>)}</div></div></>}
+   {!analytics&&<p className="mt-5 rounded-xl bg-black/20 p-5 text-sm text-zinc-500">{analyticsLoading?'Loading analytics…':'Analytics will appear after the database table is available.'}</p>}
+  </section>
+  <form onSubmit={save} className="space-y-6">
+   <Section title="Search & API Settings" icon={<Server/>}><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"><Field l="Search Query"><input className={input} value={settings.query} onChange={e=>update('query',e.target.value)}/></Field><Field l="Order"><Select value={settings.order} options={orders} onChange={v=>update('order',v)}/></Field><Field l="Per Page"><Select value={settings.per_page} options={pages} onChange={v=>update('per_page',Number(v))}/></Field><Field l="Thumb Size"><Select value={settings.thumbsize} options={thumbs} onChange={v=>update('thumbsize',v)}/></Field><Field l="Filter A"><Select value={settings.gay} options={[0,1,2]} onChange={v=>update('gay',Number(v))}/></Field><Field l="Filter B"><Select value={settings.lq} options={[0,1,2]} onChange={v=>update('lq',Number(v))}/></Field><Field l="API Base URL" full><input className={input} value={settings.api_base_url} onChange={e=>update('api_base_url',e.target.value)}/></Field><Field l="Search Path"><input className={input} value={settings.api_search_path} onChange={e=>update('api_search_path',e.target.value)}/></Field><Field l="Details Path"><input className={input} value={settings.api_details_path} onChange={e=>update('api_details_path',e.target.value)}/></Field><Field l="Timeout ms"><input className={input} type="number" value={settings.api_timeout_ms} onChange={e=>update('api_timeout_ms',Number(e.target.value))}/></Field><Field l="Items Per Page"><Select value={settings.items_per_page} options={pages} onChange={v=>update('items_per_page',Number(v))}/></Field><Field l="Cache Seconds"><Select value={settings.cache_duration} options={[0,60,300,3600]} onChange={v=>update('cache_duration',Number(v))}/></Field></div></Section>
+   <Section title="Search Engine Verification" icon={<ShieldCheck/>}><p className="mb-5 text-sm text-zinc-500">Paste the verification values from each webmaster console. They are stored in Supabase and automatically emitted as the correct meta tags.</p><div className="grid gap-4 md:grid-cols-2"><Verify l="Google Search Console" v={settings.google_site_verification} onChange={v=>update('google_site_verification',v)} ph="google-site-verification content"/><Verify l="Bing Webmaster Tools" v={settings.bing_site_verification} onChange={v=>update('bing_site_verification',v)} ph="msvalidate.01 content"/><Verify l="Yandex Webmaster" v={settings.yandex_site_verification} onChange={v=>update('yandex_site_verification',v)} ph="yandex-verification content"/><Verify l="Naver Search Advisor" v={settings.naver_site_verification} onChange={v=>update('naver_site_verification',v)} ph="naver-site-verification content"/><Verify l="Baidu Webmaster" v={settings.baidu_site_verification} onChange={v=>update('baidu_site_verification',v)} ph="baidu-site-verification content"/><Verify l="IndexNow Key" v={settings.indexnow_key} onChange={v=>update('indexnow_key',v)} ph="IndexNow API key"/></div><div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-5 text-zinc-500">Supported verification slots: <b className="text-zinc-300">Google, Bing, Yandex, Naver, Baidu</b>. IndexNow is stored separately for future URL submission/instant indexing.</div></Section>
+   <div className="flex justify-end gap-3 border-t border-white/10 pt-5"><button type="button" onClick={loadSettings} className="rounded-xl border border-white/10 px-4 py-3 text-sm">Reload</button><button disabled={busy} className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white"><Save className="mr-2 inline h-4 w-4"/>{busy?'Saving…':'Save All Settings'}</button></div>{msg&&<p className="text-sm text-emerald-300">{msg}</p>}{error&&<p className="text-sm text-red-300">{error}</p>}
+  </form>
+ </main></div>;
 }
-
-function Field({ label, children, full = false }: { label: string; children: ReactNode; full?: boolean }) { return <div className={`flex flex-col gap-2 ${full ? 'sm:col-span-2 lg:col-span-3' : ''}`}><label className="text-xs font-semibold text-zinc-300">{label}</label>{children}</div>; }
-function Select({ value, placeholder, options, onChange, suffix = '' }: { value: string | number; placeholder: string; options: Array<string | number>; onChange: (value: string) => void; suffix?: string }) { return <div className="relative"><select value={value} onChange={e => onChange(e.target.value)} className={selectClass}><option value="" disabled>{placeholder}</option>{options.map(o => <option key={String(o)} value={String(o)}>{String(o)}{suffix}</option>)}</select><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-600">⌄</span></div>; }
-function Section({ icon, number, title, description, children }: { icon: ReactNode; number: string; title: string; description: string; children: ReactNode }) { return <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#141414] shadow-xl shadow-black/10"><div className="border-b border-white/10 px-5 py-5 sm:px-6"><div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600/10 text-red-400 ring-1 ring-red-500/20">{icon}</div><div><div className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-400">Section {number}</div><h2 className="mt-1 text-lg font-bold text-white">{title}</h2><p className="mt-1 text-sm text-zinc-500">{description}</p></div></div></div><div className="p-5 sm:p-6">{children}</div></section>; }
-function Alert({ text, success = false }: { text: string; success?: boolean }) { return <div className={`mb-5 rounded-xl border px-4 py-3 text-sm ${success ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300' : 'border-red-500/20 bg-red-500/5 text-red-300'}`}>{text}</div>; }
+function Header({loggedIn,onLogout}:{loggedIn:boolean;onLogout?:()=>void}){return <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6"><div className="font-black tracking-[.18em] text-white">ADMIN</div>{loggedIn&&<div className="flex gap-2"><Link href="/" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-400"><ArrowLeft size={14}/>Portal</Link><button onClick={onLogout} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-400"><LogOut size={14}/>Logout</button></div>}</div></header>}
+function Section({title,icon,children}:{title:string;icon:React.ReactNode;children:React.ReactNode}){return <section className="rounded-2xl border border-white/10 bg-[#141414] p-5 sm:p-6"><h2 className="flex items-center gap-2 text-lg font-bold text-white">{icon}<span>{title}</span></h2><div className="mt-5">{children}</div></section>}
+function Field({l,children,full=false}:{l:string;children:React.ReactNode;full?:boolean}){return <label className={`block ${full?'md:col-span-2 lg:col-span-3':''}`}><span className="mb-2 block text-xs font-semibold text-zinc-300">{l}</span>{children}</label>}
+function Select({value,options,onChange}:{value:string|number;options:(string|number)[];onChange:(v:string)=>void}){return <select className={input} value={value} onChange={e=>onChange(e.target.value)}>{options.map(x=><option key={String(x)} value={x}>{x}</option>)}</select>}
+function Verify({l,v,onChange,ph}:{l:string;v:string;onChange:(v:string)=>void;ph:string}){return <label><span className="mb-2 block text-xs font-semibold text-zinc-300">{l}</span><input className={input} value={v} onChange={e=>onChange(e.target.value)} placeholder={ph}/></label>}
+function Metric({title,value}:{title:string;value:string|number}){return <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs text-zinc-500">{title}</p><p className="mt-1 truncate text-2xl font-black text-white">{typeof value==='number'?value.toLocaleString():value}</p></div>}
+function Stats({title,data,icon}:{title:string;data:Stat[];icon?:React.ReactNode}){const max=Math.max(...data.map(x=>x.count),1);return <div className="rounded-xl border border-white/10 p-4"><h3 className="mb-3 flex items-center gap-2 font-semibold text-white">{icon}{title}</h3><div className="space-y-2">{data.slice(0,8).map(x=><div key={x.name} className="flex items-center gap-3 text-xs"><span className="w-28 truncate text-zinc-400">{x.name}</span><div className="h-2 flex-1 rounded bg-white/5"><div className="h-2 rounded bg-red-500/70" style={{width:`${Math.max(2,x.count/max*100)}%`}}/></div><span className="w-10 text-right text-zinc-500">{x.count}</span></div>)}</div></div>}
