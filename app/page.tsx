@@ -20,9 +20,9 @@ interface VideoItem {
 type PortalSettings = { query: string; order: string; per_page: number; thumbsize: string; gay: number; lq: number };
 type VideoCache = { videos: VideoItem[]; totalCount: number; totalPages: number; savedAt: number };
 
-const DEFAULTS: PortalSettings = { query: 'all', order: 'latest', per_page: 24, thumbsize: 'medium', gay: 0, lq: 1 };
+const DEFAULTS: PortalSettings = { query: 'all', order: 'latest', per_page: 12, thumbsize: 'small', gay: 0, lq: 1 };
 const NAV = [['latest', 'Latest'], ['most-popular', 'Most Popular'], ['top-weekly', 'Trending'], ['top-rated', 'Top Rated']];
-const CACHE_PREFIX = 'elovex:videos:v5:';
+const CACHE_PREFIX = 'elovex:videos:v6:';
 const CACHE_TTL = 2 * 60 * 1000;
 
 function readVideoCache(key: string): VideoCache | null {
@@ -84,8 +84,10 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
   }, []);
 
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
-  const perPage = Math.max(1, Number(settings.per_page) || 24);
-  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize: settings.thumbsize || 'medium', gay: settings.gay ?? 0, lq: settings.lq ?? 1 }), [effectiveQuery, page, perPage, order, settings.thumbsize, settings.gay, settings.lq]);
+  // Keep the API payload and the initial page display lightweight.
+  const perPage = Math.min(12, Math.max(1, Number(settings.per_page) || 12));
+  const thumbsize = 'small';
+  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize, gay: settings.gay ?? 0, lq: settings.lq ?? 1 }), [effectiveQuery, page, perPage, order, settings.gay, settings.lq]);
 
   useEffect(() => {
     const cached = readVideoCache(requestKey);
@@ -96,8 +98,8 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
       setVideos(cached.videos); setTotalCount(cached.totalCount); setTotalPages(Math.max(1, cached.totalPages)); setLoading(false);
     } else { setVideos([]); setLoading(true); }
 
-    const params = new URLSearchParams({ q: effectiveQuery, page: String(page), per_page: String(perPage), order, thumbsize: settings.thumbsize || 'medium', gay: String(settings.gay ?? 0), lq: String(settings.lq ?? 1), format: 'json' });
-    fetch(`/api/videos/search?${params.toString()}`, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' } })
+    const params = new URLSearchParams({ q: effectiveQuery, page: String(page), per_page: String(perPage), order, thumbsize, gay: String(settings.gay ?? 0), lq: String(settings.lq ?? 1), format: 'json' });
+    fetch(`/api/videos/search?${params.toString()}`, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json' } })
       .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data?.error || 'Unable to load videos'); return data; })
       .then((data) => {
         if (!active) return;
@@ -111,7 +113,7 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [requestKey, effectiveQuery, page, perPage, order, settings.thumbsize, settings.gay, settings.lq]);
+  }, [requestKey, effectiveQuery, page, perPage, order, settings.gay, settings.lq]);
 
   useEffect(() => { if (page > totalPages && totalPages >= 1) setPage(totalPages); }, [page, totalPages]);
 
@@ -157,7 +159,7 @@ export default function VideoPortalPage({ initialPage = 1 }: { initialPage?: num
         <section className="mb-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-xs font-medium text-red-600">ELOVEX</p><h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{activeSearch ? `Results for “${activeSearch}”` : 'Discover trending videos'}</h1><p className="mt-1 text-sm text-zinc-500">Fresh videos and popular content.</p></div><div className="hidden text-right sm:block"><p className="text-[10px] uppercase tracking-wide text-zinc-400">Available</p><p className="text-lg font-semibold">{totalCount.toLocaleString()}</p></div></section>
         {error && <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
         <div className="relative min-h-[240px]">
-          {videos.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.map((video, index) => { const image = thumbnail(video); return <Link key={video.id ?? `${page}-${index}`} href={`/videos/${video.id}`} className="group overflow-hidden rounded-lg border border-zinc-200 bg-white"><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Video'} loading={index < 6 ? 'eager' : 'lazy'} fetchPriority={index < 6 ? 'high' : 'low'} decoding="async" className="h-full w-full object-cover" />}<span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration ? <><Clock className="h-3 w-3" />{video.length_min || video.duration}</> : 'Watch'}</span></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-zinc-800">{video.title || 'Untitled video'}</h2><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{video.rate ?? '—'}</span></div></div></Link>; })}</div>}
+          {videos.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{videos.map((video, index) => { const image = thumbnail(video); return <Link key={video.id ?? `${page}-${index}`} href={`/videos/${video.id}`} className="group overflow-hidden rounded-lg border border-zinc-200 bg-white"><div className="relative aspect-video overflow-hidden bg-zinc-100">{image && <img src={image} alt={video.title || 'Video'} loading={index < 4 ? 'eager' : 'lazy'} fetchPriority={index < 2 ? 'high' : 'low'} decoding="async" className="h-full w-full object-cover" />}<span className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white">{video.length_min || video.duration ? <><Clock className="h-3 w-3" />{video.length_min || video.duration}</> : 'Watch'}</span></div><div className="p-2.5"><h2 className="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-zinc-800">{video.title || 'Untitled video'}</h2><div className="mt-2 flex items-center justify-between text-[11px] text-zinc-400"><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{typeof video.views === 'number' ? video.views.toLocaleString() : '—'}</span><span className="flex items-center gap-1"><Star className="h-3 w-3 fill-current" />{video.rate ?? '—'}</span></div></div></Link>; })}</div>}
           {loading && videos.length === 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50"><div className="aspect-video bg-zinc-200" /><div className="p-3"><div className="h-4 w-full rounded bg-zinc-200" /><div className="mt-2 h-3 w-2/3 rounded bg-zinc-200" /></div></div>)}</div>}
           {!loading && videos.length === 0 && !error && <div className="rounded-lg border border-dashed border-zinc-300 p-12 text-center"><p className="font-medium">Nothing here yet</p><p className="mt-1 text-sm text-zinc-500">Try another search or category.</p></div>}
         </div>
