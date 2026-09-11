@@ -69,11 +69,11 @@ function getTotalPages(data: any, totalCount: number, perPage: number): number {
   return value ? Math.floor(value) : Math.max(1, Math.ceil(totalCount / Math.max(1, perPage)));
 }
 
-export default function VideoPortalPage({ initialPage = 1, initialOrder = 'latest' }: { initialPage?: number; initialOrder?: string }) {
+export default function VideoPortalPage({ initialPage = 1, initialOrder = 'latest', initialSearch = '' }: { initialPage?: number; initialOrder?: string; initialSearch?: string }) {
   const safeInitialPage = Math.max(1, Number(initialPage) || 1);
   const [settings, setSettings] = useState(DEFAULTS);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeSearch, setActiveSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [activeSearch, setActiveSearch] = useState(initialSearch);
   const [order, setOrder] = useState(initialOrder);
   const [page, setPage] = useState(safeInitialPage);
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -93,16 +93,17 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
   const effectiveQuery = activeSearch.trim() || settings.query || 'all';
   const perPage = 50;
   const thumbsize = 'small';
-  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize, gay: settings.gay ?? 0, lq: settings.lq ?? 1 }), [effectiveQuery, page, order, settings.gay, settings.lq]);
+  const gayFilter = effectiveQuery.toLowerCase() === 'gay' ? 2 : settings.gay ?? 0;
+  const requestKey = useMemo(() => JSON.stringify({ q: effectiveQuery, page, per_page: perPage, order, thumbsize, gay: gayFilter, lq: settings.lq ?? 1 }), [effectiveQuery, page, order, gayFilter, settings.lq]);
 
   const buildRequest = (targetPage: number) => {
-    const params = new URLSearchParams({ q: effectiveQuery, page: String(targetPage), per_page: String(perPage), order, thumbsize, gay: String(settings.gay ?? 0), lq: String(settings.lq ?? 1), format: 'json' });
+    const params = new URLSearchParams({ q: effectiveQuery, page: String(targetPage), per_page: String(perPage), order, thumbsize, gay: String(gayFilter), lq: String(settings.lq ?? 1), format: 'json' });
     return `/api/videos/search?${params.toString()}`;
   };
 
   const prefetchPage = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages || targetPage === page) return;
-    const key = JSON.stringify({ q: effectiveQuery, page: targetPage, per_page: perPage, order, thumbsize, gay: settings.gay ?? 0, lq: settings.lq ?? 1 });
+    const key = JSON.stringify({ q: effectiveQuery, page: targetPage, per_page: perPage, order, thumbsize, gay: gayFilter, lq: settings.lq ?? 1 });
     if (readVideoCache(key) || prefetching.current.has(key)) return;
     prefetching.current.add(key);
     fetch(buildRequest(targetPage), { cache: 'force-cache', headers: { Accept: 'application/json' } })
@@ -156,28 +157,41 @@ export default function VideoPortalPage({ initialPage = 1, initialOrder = 'lates
 
   useEffect(() => { if (page > totalPages && totalPages >= 1) setPage(totalPages); }, [page, totalPages]);
 
-  const submitSearch = (event: FormEvent) => { event.preventDefault(); setPage(1); setActiveSearch(searchQuery.trim()); };
-  const changeOrder = (nextOrder: string) => { if (nextOrder === order) return; setOrder(nextOrder); setPage(1); };
+  const submitSearch = (event: FormEvent) => { event.preventDefault(); const nextSearch = searchQuery.trim(); setPage(1); setActiveSearch(nextSearch); syncListingUrl(1, order, nextSearch); };
+  const syncListingUrl = (nextPage: number, nextOrder = order, nextSearch = activeSearch) => {
+    const params = new URLSearchParams();
+    if (nextSearch) params.set('category', nextSearch);
+    if (nextOrder !== 'latest') params.set('order', nextOrder);
+    const query = params.toString();
+    const path = nextPage === 1 ? '/' : `/p${nextPage}`;
+    window.history.pushState({ page: nextPage, order: nextOrder, search: nextSearch }, '', `${path}${query ? `?${query}` : ''}`);
+  };
+  const changeOrder = (nextOrder: string) => { if (nextOrder === order) return; setOrder(nextOrder); setPage(1); syncListingUrl(1, nextOrder, activeSearch); };
   const changeCategory = (category: string) => {
     setSearchQuery(category);
     setActiveSearch(category);
     setPage(1);
+    syncListingUrl(1, order, category);
     setSettings((current) => ({ ...current, gay: category === 'gay' ? 2 : 0 }));
   };
 
   const goToPage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
     setPage(nextPage);
-    const path = nextPage === 1 ? '/' : `/p${nextPage}`;
-    window.history.pushState({ page: nextPage }, '', path);
+    syncListingUrl(nextPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
     const onPopState = () => {
       const match = window.location.pathname.match(/^\/p(\d+)\/?$/);
+      const params = new URLSearchParams(window.location.search);
       setPage(match ? Math.max(1, Number(match[1])) : 1);
+      setActiveSearch(params.get('category') || '');
+      setSearchQuery(params.get('category') || '');
+      setOrder(params.get('order') || 'latest');
     };
+    onPopState();
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
