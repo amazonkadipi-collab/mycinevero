@@ -1,25 +1,21 @@
 import type { MetadataRoute } from 'next';
-import { VIDEO_CATEGORIES } from '@/lib/categories';
 
 const SITE_URL = 'https://elovex.vercel.app';
 const MAX_URLS_PER_SITEMAP = 45000;
 const API_PAGE_SIZE = 1000;
-const MAX_CATEGORY_PAGES = 100;
 const REQUEST_TIMEOUT_MS = 20000;
 
 type ApiVideo = { id?: string; added?: string };
 type ApiResult = { videos?: ApiVideo[]; total_count?: number; total_pages?: number };
 
-async function fetchApiPage(page: number, category?: string): Promise<ApiResult> {
+async function fetchApiPage(page: number): Promise<ApiResult> {
   const url = new URL('/api/videos/search', SITE_URL);
   url.searchParams.set('page', String(page));
   url.searchParams.set('per_page', String(API_PAGE_SIZE));
   url.searchParams.set('order', 'latest');
   url.searchParams.set('thumbsize', 'small');
   url.searchParams.set('lq', '1');
-  url.searchParams.set('query', category || 'all');
-  if (category) url.searchParams.set('category', category);
-  if (category === 'gay') url.searchParams.set('gay', '2');
+  url.searchParams.set('query', 'all');
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -59,21 +55,7 @@ export default async function sitemap({ id }: { id?: number }): Promise<Metadata
   const startOffset = firstVideoIndex - (firstPage - 1) * API_PAGE_SIZE;
   const selected = videos.slice(Math.max(0, startOffset), startOffset + MAX_URLS_PER_SITEMAP);
   const videoEntries = selected.map(videoEntry).filter(Boolean) as MetadataRoute.Sitemap;
-  if (sitemapId !== 0) return videoEntries;
-
-  const categoryEntries: MetadataRoute.Sitemap = VIDEO_CATEGORIES.map(([category]) => ({ url: `${SITE_URL}/category/${encodeURIComponent(category)}`, changeFrequency: 'hourly', priority: 0.9 }));
-  const categoryPages = await Promise.all(VIDEO_CATEGORIES.map(async ([category]) => {
-    const first = await fetchApiPage(1, category);
-    const total = Number(first.total_count || 0);
-    const totalPages = Math.min(MAX_CATEGORY_PAGES, Math.max(1, Number(first.total_pages || 0) || (total > 0 ? Math.ceil(total / API_PAGE_SIZE) : 1)));
-    return { category, totalPages };
-  }));
-  const paginationEntries: MetadataRoute.Sitemap = [];
-  for (const { category, totalPages } of categoryPages) {
-    for (let page = 2; page <= totalPages; page += 1) paginationEntries.push({ url: `${SITE_URL}/p/${page}?category=${encodeURIComponent(category)}`, changeFrequency: 'daily', priority: 0.6 });
-  }
-
-  return [{ url: SITE_URL, changeFrequency: 'hourly', priority: 1 }, ...categoryEntries, ...paginationEntries, ...videoEntries];
+  return sitemapId === 0 ? [{ url: SITE_URL, changeFrequency: 'hourly', priority: 1 }, ...videoEntries] : videoEntries;
 }
 
 function videoEntry(video: ApiVideo): MetadataRoute.Sitemap[number] | null {
