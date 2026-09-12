@@ -1,41 +1,94 @@
 @import "tailwindcss";
 
-:root { --font-xvideos: Arial, sans-serif; color-scheme: dark; }
-html, body { font-family: var(--font-xvideos); background: #09090b; }
-body { margin: 0; }
-button, a { -webkit-tap-highlight-color: transparent; }
+:root {
+  --elovex-text: #292a2d;
+  --elovex-muted: #77797e;
+  --elovex-border: #e5e5e7;
+  --elovex-soft: #fafafa;
+  --elovex-accent: #e52b43;
+}
 
-/* Reference-inspired visual system: charcoal canvas, compact chrome, blue links. */
-.elovex-shell { background: #292c32 !important; color: #eeeeef !important; }
-.elovex-shell header, .elovex-shell footer { background: #292c32 !important; border-color: #3e4249 !important; }
-.elovex-shell main { background: #292c32; }
-.elovex-shell a { color: #4f83ff; }
-.elovex-shell nav a, .elovex-shell footer span, .elovex-shell footer h3, .elovex-shell footer div { color: #c9cbd0; }
-.elovex-shell h1, .elovex-shell h2, .elovex-shell h3, .elovex-shell p { color: #eeeeef; }
-.elovex-shell input { background: #ffffff !important; color: #222328 !important; border-color: #bfc2c8 !important; }
-.elovex-shell button { background: #eeeeef; color: #25272c; }
-.elovex-shell form button { background: #eeeeef; color: #25272c; }
-.elovex-shell section, .elovex-shell [class*="bg-[#fafafa]"], .elovex-shell [class*="bg-white"] { background: transparent !important; border-color: #3e4249 !important; }
-.elovex-shell [class*="bg-[#ededee]"], .elovex-shell [class*="bg-[#e7e7e8]"], .elovex-shell [class*="bg-[#eeeeef]"] { background: #3b3f46 !important; }
-.elovex-shell [class*="border-[#e4e4e6]"], .elovex-shell [class*="border-[#e5e5e7]"], .elovex-shell [class*="border-[#e7e7e8]"], .elovex-shell [class*="border-[#dedee0]"] { border-color: #3e4249 !important; }
-.elovex-shell footer { color: #c9cbd0; }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: var(--elovex-text);
+  font-family: Arial, Helvetica, sans-serif;
+}
 
-.elovex-shell .video-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.elovex-shell .video-card { display: block; width: 100%; overflow: hidden; border: 1px solid #3e4249; background: #33363c; text-align: left; transition: border-color 160ms ease, transform 160ms ease; }
-.elovex-shell .video-card:hover { border-color: #4f83ff; transform: translateY(-2px); }
-.elovex-shell .video-thumb { aspect-ratio: 16 / 9; display: grid; place-items: center; overflow: hidden; background: #202228; color: #8e929a; font-size: 12px; }
-.elovex-shell .video-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.elovex-shell .video-info { padding: 10px; }
-.elovex-shell .video-info h2 { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 700; }
-.elovex-shell .video-meta { display: flex; gap: 10px; margin-top: 6px; color: #a9adb5; font-size: 11px; }
-.elovex-shell .empty-state { display: flex; min-height: 220px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; color: #a9adb5; }
-.elovex-shell .empty-state strong { color: #eeeeef; }
-.elovex-shell .pagination { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 28px 0 4px; color: #a9adb5; font-size: 13px; }
-.elovex-shell .pagination a { color: #4f83ff; }
-.video-modal-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; background: rgb(0 0 0 / 80%); }
-.video-modal { position: relative; width: min(100%, 960px); background: #111318; }
-.modal-close { position: absolute; right: 8px; top: 8px; z-index: 2; width: 32px; height: 32px; background: rgb(0 0 0 / 70%); color: white; font-size: 24px; }
-.modal-player { aspect-ratio: 16 / 9; }
-.modal-player iframe { width: 100%; height: 100%; border: 0; }
-@media (min-width: 640px) { .elovex-shell .video-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1024px) { .elovex-shell .video-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+body { min-height: 100vh; }
+
+button,
+a,
+input { -webkit-tap-highlight-color: transparent; }
+
+button,
+a {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.elovex-shell {
+  min-height: 100vh;
+  background: #fff;
+  color: var(--elovex-text);
+}
+
+.elovex-shell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.elovex-shell button:focus-visible,
+.elovex-shell a:focus-visible,
+.elovex-shell input:focus-visible {
+  outline: 2px solid var(--elovex-accent);
+  outline-offset: 2px;
+}
+
+.elovex-shell ::selection {
+  background: #f9cbd2;
+  color: #222;
+}
+
+.elovex-shell .elovex-logo { letter-spacing: -0.08em; }
+.elovex-shell .elovex-accent { color: var(--elovex-accent); }
+
+.elovex-shell .poster-card,
+.elovex-shell .landscape-card {
+  overflow: hidden;
+  border: 1px solid var(--elovex-border);
+  background: #fff;
+}
+
+.elovex-shell .poster-card:hover,
+.elovex-shell .landscape-card:hover { border-color: #cfcfd2; }
+
+.elovex-shell .poster-image {
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  background: #f1f1f2;
+}
+
+.elovex-shell .poster-image img,
+.elovex-shell .landscape-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.elovex-shell .landscape-image {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f1f1f2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
