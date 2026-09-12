@@ -11,7 +11,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const search = params.k?.trim();
   const canonical = search ? `${SITE_URL}/?k=${encodeURIComponent(search)}` : SITE_URL;
   const title = search ? `${search} Movies & Series` : 'Movies & Series Streaming';
-  const description = search ? `Browse titles related to ${search} on Elovex.` : 'Discover movies and series from your private Elovex catalogue.';
+  const description = search ? `Browse titles related to ${search} on Elovex.` : 'Discover movies and series in a fast, clean, responsive catalogue.';
   return {
     title,
     description,
@@ -30,7 +30,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   const search = params.k?.trim() || '';
   return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Elovex', url: SITE_URL, description: 'Video discovery and search platform.', potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/?k={search_term_string}`, 'query-input': 'required name=search_term_string' } }) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Elovex', url: SITE_URL, description: 'Movies and series catalogue.', potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/?k={search_term_string}`, 'query-input': 'required name=search_term_string' } }) }} />
     <VideoPortalClient initialSearch={search} />
   </>;
 }

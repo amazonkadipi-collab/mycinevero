@@ -7,21 +7,21 @@ const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://elovex.vercel.app'),
-  title: { default: 'Elovex – Films et Séries en Streaming', template: '%s | Elovex' },
-  description: 'Découvrez des films et des séries dans une interface rapide, simple et responsive.',
-  keywords: ['Elovex', 'films', 'séries', 'streaming', 'films en français', 'séries en streaming'],
+  title: { default: 'Elovex – Movies and Series Streaming', template: '%s | Elovex' },
+  description: 'Discover movies and series in a fast, clean, responsive interface.',
+  keywords: ['Elovex', 'movies', 'series', 'streaming', 'movie catalogue', 'TV series'],
   applicationName: 'Elovex',
   alternates: { canonical: '/', languages: { en: '/', 'x-default': '/' } },
   robots: { index: true, follow: true, 'max-image-preview': 'large' },
   openGraph: {
-    title: 'Elovex – Films et Séries en Streaming',
-    description: 'Découvrez des films et des séries dans une interface rapide, simple et responsive.',
+    title: 'Elovex – Movies and Series Streaming',
+    description: 'Discover movies and series in a fast, clean, responsive interface.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Elovex – Films et Séries en Streaming',
-    description: 'Découvrez des films et des séries dans une interface rapide, simple et responsive.',
+    title: 'Elovex – Movies and Series Streaming',
+    description: 'Discover movies and series in a fast, clean, responsive interface.',
   },
   verification: { google: GOOGLE_SITE_VERIFICATION },
 };
