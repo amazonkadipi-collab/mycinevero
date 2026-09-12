@@ -1,38 +1,35 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import VideoPortalClient from './VideoPortalClient';
-import { loadVideoListing } from '@/lib/video-listing';
+import CatalogHome from '@/components/CatalogHome';
+import { tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming } from '@/lib/tmdb';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://elovex.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://watchmovies4.vercel.app';
 
-type SearchParams = { k?: string; category?: string; order?: string };
+export const metadata: Metadata = {
+  title: 'Watch Movies 4 – Movies & Series',
+  description: 'Discover trending movies, popular series, new releases and upcoming films.',
+  alternates: { canonical: SITE_URL },
+  openGraph: { title: 'Watch Movies 4 – Movies & Series', description: 'Discover movies and TV series in one clean catalogue.', url: SITE_URL, type: 'website' },
+};
 
-export async function generateMetadata({ searchParams }: { searchParams: Promise<SearchParams> }): Promise<Metadata> {
-  const params = await searchParams;
-  const search = params.k?.trim();
-  const canonical = search ? `${SITE_URL}/?k=${encodeURIComponent(search)}` : SITE_URL;
-  const title = search ? `${search} Movies & Series` : 'Movies & Series Streaming';
-  const description = search ? `Browse titles related to ${search} on Elovex.` : 'Discover movies and series in a fast, clean, responsive catalogue.';
-  return {
-    title,
-    description,
-    alternates: { canonical },
-    robots: { index: true, follow: true, 'max-image-preview': 'large' },
-    openGraph: { title: `${title} | Elovex`, description, type: 'website', url: canonical },
-  };
-}
+const empty = { results: [] };
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const params = await searchParams;
+export default async function HomePage() {
+  const [trending, popularMovies, popularSeries, latestMovies, upcoming] = await Promise.all([
+    tmdbTrending('all', 'week').catch(() => empty),
+    tmdbPopular('movie').catch(() => empty),
+    tmdbPopular('tv').catch(() => empty),
+    tmdbNowPlaying().catch(() => empty),
+    tmdbUpcoming().catch(() => empty),
+  ]);
 
-  // Legacy category query URLs must disappear rather than continuing to expose
-  // the old taxonomy. Let Next.js return a real HTTP 404 for these URLs.
-  if (params.category?.trim()) notFound();
-
-  const search = params.k?.trim() || '';
-  const listing = await loadVideoListing(1, search, params.order || 'latest', 24);
   return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Elovex', url: SITE_URL, description: 'Movies and series catalogue.', potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/?k={search_term_string}`, 'query-input': 'required name=search_term_string' } }) }} />
-    <VideoPortalClient initialSearch={search} initialPage={1} initialOrder={params.order || 'latest'} initialVideos={listing.videos} initialTotalPages={listing.totalPages} initialError={listing.error} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Watch Movies 4',
+      url: SITE_URL,
+      potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/search?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+    }) }} />
+    <CatalogHome trending={trending.results} popularMovies={popularMovies.results} popularSeries={popularSeries.results.map((x) => ({ ...x, media_type: 'tv' as const }))} latestMovies={latestMovies.results.map((x) => ({ ...x, media_type: 'movie' as const }))} upcoming={upcoming.results.map((x) => ({ ...x, media_type: 'movie' as const }))} />
   </>;
 }
