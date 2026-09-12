@@ -2,10 +2,27 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'DMCA / Report',
-  description: 'Report copyright concerns, illegal content, age concerns, or safety issues to Elovex.',
+  description: 'Report copyright concerns, illegal content, age concerns, or safety issues to Watch Movies 4.',
   alternates: { canonical: '/dmca' },
 };
 
 export default function DmcaPage() {
-  return <main className="mx-auto max-w-3xl px-5 py-12 text-zinc-800"><h1 className="text-3xl font-bold">DMCA / Report</h1><section className="prose prose-zinc mt-8 max-w-none"><p>Use this page to report copyright concerns, suspected illegal content, suspected minor involvement, non-consensual material, or serious safety issues.</p><h2>Include in a report</h2><ul><li>The exact URL of the page or video.</li><li>A clear description of the issue and the action requested.</li><li>For copyright notices: your contact details, the work claimed, the material to be removed, a good-faith statement, and a statement of authority to act.</li><li>For urgent safety or minor-related concerns: identify the exact content and why it requires immediate attention.</li></ul><h2>Send a report</h2><p>Until a dedicated legal mailbox is configured, submit reports through the <a href="/contact">Contact page</a> with the subject “Urgent report” or “Copyright notice”. Do not send passwords or unnecessary identity documents.</p><p className="text-sm text-zinc-500">This page describes a reporting process and is not a representation that any particular statutory notice regime applies. Have counsel configure the final notice process and designated agent details.</p></section></main>;
+  return (
+    <main className="mx-auto max-w-3xl px-5 py-12 text-zinc-800">
+      <h1 className="text-3xl font-bold">DMCA / Report</h1>
+      <section className="prose prose-zinc mt-8 max-w-none">
+        <p>Use this page to report copyright concerns, suspected illegal content, suspected minor involvement, non-consensual material, or serious safety issues.</p>
+        <h2>Include in a report</h2>
+        <ul>
+          <li>The exact URL of the page or title.</li>
+          <li>A clear description of the issue and the action requested.</li>
+          <li>For copyright notices: your contact details, the work claimed, the material to be removed, a good-faith statement, and a statement of authority to act.</li>
+          <li>For urgent safety or minor-related concerns: identify the exact content and why it requires immediate attention.</li>
+        </ul>
+        <h2>Send a report</h2>
+        <p>Until a dedicated legal mailbox is configured, submit reports through the <a href="/contact">Contact page</a> with the subject “Urgent report” or “Copyright notice”. Do not send passwords or unnecessary identity documents.</p>
+        <p className="text-sm text-zinc-500">This page describes a reporting process and is not a representation that any particular statutory notice regime applies. Have counsel configure the final notice process and designated agent details.</p>
+      </section>
+    </main>
+  );
 }
