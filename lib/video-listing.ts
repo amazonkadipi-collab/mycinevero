@@ -73,9 +73,7 @@ async function fetchJsonText(url: string, timeoutMs = 10000): Promise<any> {
     if (text) {
       try { data = JSON.parse(text); } catch { data = null; }
     }
-    if (!response.ok) {
-      throw new Error(data?.error || `Video API returned HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new Error(data?.error || `Video API returned HTTP ${response.status}`);
     if (!data) throw new Error('Video API returned an empty or invalid response');
     return data;
   } finally {
@@ -92,7 +90,6 @@ export async function loadVideoListing(page: number, category = '', order = 'lat
     per_page: String(Math.min(100, Math.max(1, perPage))),
     order,
     thumbsize: 'small',
-    gay: category.toLowerCase() === 'gay' ? '2' : '0',
     lq: '1',
     format: 'json',
   });
