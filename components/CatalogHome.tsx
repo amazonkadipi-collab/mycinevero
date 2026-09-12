@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Star, ArrowRight } from 'lucide-react';
+import { Star, ArrowRight, Sparkles } from 'lucide-react';
 import type { TmdbTitle } from '@/lib/tmdb';
 import { tmdbImage } from '@/lib/tmdb';
 import SiteHeader from '@/components/SiteHeader';
@@ -16,34 +16,36 @@ function Card({ item }: { item: TmdbTitle }) {
   const title = titleOf(item);
   const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-${item.id}`;
   const rating = ratingOf(item);
-  return <Link href={`/${type}/${slug}`} className="group block min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
-    <article className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition group-hover:-translate-y-0.5 group-hover:border-zinc-300 group-hover:shadow-lg">
-      <div className="aspect-[2/3] bg-zinc-100">{item.poster_path ? <img src={tmdbImage(item.poster_path,'w342')} alt={`${title} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-400">No poster</div>}</div>
-      <div className="p-3"><div className="mb-2 flex items-center gap-2 text-[11px] font-semibold"><span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-600">{type === 'movie' ? 'Movie' : 'Series'}</span>{yearOf(item) && <span className="text-zinc-500">{yearOf(item)}</span>}</div><h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 group-hover:text-red-600">{title}</h3><div className="mt-2 inline-flex items-center gap-1 text-xs text-zinc-500" aria-label={`Rating ${rating === 'N/A' ? 'not available' : `${rating} out of 10`}`}><Star size={12} fill="currentColor" aria-hidden="true" />{rating === 'N/A' ? 'Not rated' : `${rating}/10`}</div></div>
+  return <Link href={`/${type}/${slug}`} className="group block min-w-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400">
+    <article className="overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-[0_4px_16px_rgba(23,32,51,0.06)] transition duration-200 group-hover:-translate-y-1 group-hover:border-cyan-200 group-hover:shadow-[0_10px_24px_rgba(22,138,173,0.13)]">
+      <div className="relative aspect-[2/3] overflow-hidden bg-sky-50">{item.poster_path ? <img src={tmdbImage(item.poster_path,'w342')} alt={`${title} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]" /> : <div className="flex h-full items-center justify-center text-xs text-slate-400">No poster</div>}<span className="absolute left-2 top-2 rounded-full bg-white/92 px-2 py-1 text-[10px] font-extrabold text-cyan-700 shadow-sm backdrop-blur">{type === 'movie' ? 'MOVIE' : 'SERIES'}</span></div>
+      <div className="p-2.5"><div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold"><span className="rounded-full bg-orange-50 px-1.5 py-0.5 text-orange-600">{rating === 'N/A' ? 'NEW' : `★ ${rating}`}</span>{yearOf(item) && <span className="text-slate-400">{yearOf(item)}</span>}</div><h3 className="line-clamp-2 min-h-9 text-[13px] font-extrabold leading-[1.25rem] text-slate-800 group-hover:text-cyan-700">{title}</h3></div>
     </article>
   </Link>;
 }
-function Section({ title, items, href }: { title:string; items:TmdbTitle[]; href:string }) {
-  return <section className="border-t border-zinc-200 py-9 sm:py-11"><div className="mb-5 flex items-end justify-between gap-4"><h2 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h2><Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">View all <ArrowRight size={14} aria-hidden="true" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">{items.slice(0,8).map(item => <Card key={`${item.media_type || (item.name ? 'tv':'movie')}-${item.id}`} item={item}/>)}</div></section>;
+function Section({ title, items, href, emoji }: { title:string; items:TmdbTitle[]; href:string; emoji:string }) {
+  return <section className="border-t border-sky-100/90 py-5 sm:py-6"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-[18px] font-black tracking-tight text-slate-800 sm:text-xl"><span aria-hidden="true">{emoji}</span>{title}</h2><Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1.5 text-[11px] font-extrabold text-cyan-700 shadow-sm ring-1 ring-sky-100 hover:bg-sky-50">View all <ArrowRight size={13} aria-hidden="true" /></Link></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:grid-cols-6 xl:grid-cols-7">{items.slice(0,8).map(item => <Card key={`${item.media_type || (item.name ? 'tv':'movie')}-${item.id}`} item={item}/>)}</div></section>;
 }
 export default function CatalogHome({ trending, popularMovies, popularSeries, latestMovies, upcoming }: Props) {
   const featured = trending[0] || popularMovies[0];
-  return <div className="min-h-screen bg-white text-zinc-900"><SiteHeader /><main className="mx-auto max-w-[1180px] px-4 sm:px-6">
-    <section className="relative mt-5 min-h-[440px] overflow-hidden rounded-2xl bg-zinc-950 text-white sm:mt-7">
-      {featured?.backdrop_path && <img src={tmdbImage(featured.backdrop_path,'original')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-55" />}
-      <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-zinc-950/25" />
-      <div className="relative flex min-h-[440px] max-w-2xl flex-col justify-end p-6 sm:p-10">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-red-400">CINEVERO · MOVIES & SERIES</p>
-        <h1 className="text-4xl font-black tracking-tight sm:text-6xl">Find what to watch next.</h1>
-        <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-300 sm:text-base">Explore trending movies, TV series, genres, ratings and official trailers in one clean discovery catalogue.</p>
-        {featured && <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-zinc-300"><span className="rounded-full bg-white/10 px-3 py-1.5">Featured: {titleOf(featured)}</span>{yearOf(featured) && <span>{yearOf(featured)}</span>}{ratingOf(featured) !== 'N/A' && <span>★ {ratingOf(featured)}/10</span>}</div>}
-        <div className="mt-7 flex flex-wrap gap-3"><Link href={featured ? `/${featured.media_type === 'tv' || featured.name ? 'series' : 'movie'}/${titleOf(featured).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-${featured.id}` : '/movie'} className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700">View details</Link><Link href="/movie" className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-bold text-white hover:bg-white/10">Browse movies</Link></div>
+  const featuredType = featured?.media_type === 'tv' || featured?.name ? 'series' : 'movie';
+  const featuredSlug = featured ? `${titleOf(featured).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-${featured.id}` : '';
+  return <div className="min-h-screen text-slate-900"><SiteHeader /><main className="mx-auto max-w-[1180px] px-3 sm:px-5">
+    <section className="relative mt-3 min-h-[330px] overflow-hidden rounded-[22px] bg-slate-950 text-white shadow-[0_12px_34px_rgba(23,32,51,0.14)] sm:mt-4 sm:min-h-[350px]">
+      {featured?.backdrop_path && <img src={tmdbImage(featured.backdrop_path,'original')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-60" />}
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-slate-950/25" />
+      <div className="relative flex min-h-[330px] max-w-2xl flex-col justify-end p-5 sm:min-h-[350px] sm:p-7">
+        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-orange-300"><Sparkles size={12} aria-hidden="true" /> CINEVERO · MOVIES & SERIES</p>
+        <h1 className="max-w-xl text-3xl font-black tracking-tight sm:text-5xl">Find something you’ll love.</h1>
+        <p className="mt-2.5 max-w-lg text-[13px] leading-5 text-slate-200 sm:text-sm">Discover movies and series by mood, time, genre and what you feel like watching right now.</p>
+        {featured && <div className="mt-4 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-slate-200"><span className="rounded-full bg-white/12 px-2.5 py-1.5 backdrop-blur">🐠 Featured · {titleOf(featured)}</span>{yearOf(featured) && <span>{yearOf(featured)}</span>}{ratingOf(featured) !== 'N/A' && <span>★ {ratingOf(featured)}/10</span>}</div>}
+        <div className="mt-4 flex flex-wrap gap-2"><Link href={featured ? `/${featuredType}/${featuredSlug}` : '/movie'} className="rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600">View details</Link><Link href="/discover" className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-black text-white backdrop-blur hover:bg-white/15">✨ Discover for me</Link></div>
       </div>
     </section>
-    <section className="py-7 sm:py-8"><div className="flex gap-2 overflow-x-auto pb-1" aria-label="Popular genres">{genreLinks.map(([slug,name])=><Link key={slug} href={`/genre/${slug}`} className="shrink-0 rounded-full border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 hover:border-red-500 hover:text-red-600">{name}</Link>)}<Link href="/genres" className="shrink-0 rounded-full bg-zinc-900 px-3 py-2 text-xs font-semibold text-white">All genres</Link></div></section>
-    <Section title="Trending now" items={trending} href="/search" />
-    <Section title="Popular movies" items={popularMovies} href="/movie" />
-    <Section title="Popular series" items={popularSeries} href="/series" />
-    <Section title="Coming soon" items={upcoming.length ? upcoming : latestMovies} href="/movie" />
+    <section className="py-4 sm:py-5"><div className="flex gap-1.5 overflow-x-auto pb-0.5" aria-label="Popular genres">{genreLinks.map(([slug,name])=><Link key={slug} href={`/genre/${slug}`} className="shrink-0 rounded-full border border-sky-100 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:border-cyan-300 hover:bg-sky-50 hover:text-cyan-700">{name}</Link>)}<Link href="/genres" className="shrink-0 rounded-full bg-cyan-600 px-3 py-1.5 text-[11px] font-black text-white shadow-sm hover:bg-cyan-700">All genres</Link></div></section>
+    <Section title="Trending now" items={trending} href="/search" emoji="🔥" />
+    <Section title="Popular movies" items={popularMovies} href="/movie" emoji="🍿" />
+    <Section title="Popular series" items={popularSeries} href="/series" emoji="📺" />
+    <Section title="Coming soon" items={upcoming.length ? upcoming : latestMovies} href="/movie" emoji="✨" />
   </main></div>;
 }
