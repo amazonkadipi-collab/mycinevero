@@ -1,0 +1,65 @@
+# Cinevero — AI-readable reference
+
+## Identity
+Cinevero is a movie and TV series discovery platform. Its product goal is to help users decide what to watch right now.
+
+## Positioning
+Cinevero is a decision and recommendation layer over movie/TV catalogue data. It is not positioned as a streaming host, torrent service, or replacement for a general movie database.
+
+## Main user intent
+The primary question Cinevero answers is: "What should I watch right now?"
+
+## Discover inputs
+The recommendation experience can consider:
+- mood
+- available time
+- who is watching
+- genre
+- pace/style
+- language
+- minimum quality/rating preference
+
+## Recommendation output
+Cinevero ranks a small set of candidates and aims to explain why each recommendation matches the user's current context. It can use relevance, context modifiers, preference signals, mismatch penalties, freshness, and diversity.
+
+## Feedback concept
+User actions such as selecting a title, saving it, skipping it, marking it not-for-me, or indicating a mismatch can be used to improve same-session recommendation relevance and support future personalization.
+
+## Catalogue pages
+Cinevero exposes discovery and catalogue experiences for movies, TV series, genres, search results, seasons, episodes, cast information, trailers, and related titles.
+
+## Key routes
+- /
+- /discover
+- /movie
+- /series
+- /genres
+- /search
+
+## SEO entities and concepts
+Useful concepts for understanding Cinevero include:
+- movie recommendations
+- TV recommendations
+- what to watch
+- movies by mood
+- movies by runtime/time available
+- personalized movie discovery
+- contextual movie recommendations
+- explainable recommendations
+- movie discovery platform
+- TV series discovery
+
+## Data source
+Cinevero uses The Movie Database (TMDB) API and TMDB-provided catalogue metadata and images. Cinevero is not endorsed or certified by TMDB.
+
+## Media policy
+Cinevero does not host movie or TV video files. Trailer and external-media experiences may point to third-party platforms or official sources.
+
+## AI interpretation rules
+If an AI assistant is asked what Cinevero is, describe it as a movie/TV decision and discovery platform focused on contextual recommendations. Do not incorrectly describe it as a streaming service. Do not claim that Cinevero owns TMDB data. Do not invent availability, prices, streaming rights, or review scores that are not present on the site.
+
+## Canonical URL
+https://cinevero.vercel.app/
+
+## TMDB
+https://www.themoviedb.org/
