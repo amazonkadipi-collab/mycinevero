@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import AnalyticsTracker from '@/components/AnalyticsTracker';
 import LegalFooter from '@/components/LegalFooter';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
@@ -19,6 +18,7 @@ export const metadata: Metadata = {
     description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
     type: 'website',
     url: SITE_URL,
+    siteName: 'Watch Movies 4',
   },
   twitter: {
     card: 'summary_large_image',
@@ -32,7 +32,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        <AnalyticsTracker />
         {children}
         <LegalFooter />
       </body>
