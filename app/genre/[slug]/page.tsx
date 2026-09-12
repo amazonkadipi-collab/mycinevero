@@ -6,10 +6,185 @@ import { notFound } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 
 const GENRES: Record<string, { name: string; movie: number; tv: number }> = {
-  action:{name:'Action',movie:28,tv:10759}, adventure:{name:'Adventure',movie:12,tv:10759}, animation:{name:'Animation',movie:16,tv:16}, comedy:{name:'Comedy',movie:35,tv:35}, crime:{name:'Crime',movie:80,tv:80}, documentary:{name:'Documentary',movie:99,tv:99}, drama:{name:'Drama',movie:18,tv:18}, family:{name:'Family',movie:10751,tv:10751}, fantasy:{name:'Fantasy',movie:14,tv:10765}, horror:{name:'Horror',movie:27,tv:0}, mystery:{name:'Mystery',movie:9648,tv:9648}, romance:{name:'Romance',movie:10749,tv:0}, 'science-fiction':{name:'Science Fiction',movie:878,tv:10765}, thriller:{name:'Thriller',movie:53,tv:0}, western:{name:'Western',movie:37,tv:0},
+  action: { name: 'Action', movie: 28, tv: 10759 },
+  adventure: { name: 'Adventure', movie: 12, tv: 10759 },
+  animation: { name: 'Animation', movie: 16, tv: 16 },
+  comedy: { name: 'Comedy', movie: 35, tv: 35 },
+  crime: { name: 'Crime', movie: 80, tv: 80 },
+  documentary: { name: 'Documentary', movie: 99, tv: 99 },
+  drama: { name: 'Drama', movie: 18, tv: 18 },
+  family: { name: 'Family', movie: 10751, tv: 10751 },
+  fantasy: { name: 'Fantasy', movie: 14, tv: 10765 },
+  horror: { name: 'Horror', movie: 27, tv: 0 },
+  mystery: { name: 'Mystery', movie: 9648, tv: 9648 },
+  romance: { name: 'Romance', movie: 10749, tv: 0 },
+  'science-fiction': { name: 'Science Fiction', movie: 878, tv: 10765 },
+  thriller: { name: 'Thriller', movie: 53, tv: 0 },
+  western: { name: 'Western', movie: 37, tv: 0 },
 };
-const SITE_URL=process.env.NEXT_PUBLIC_SITE_URL||'https://watchmovies4.vercel.app';
-export function generateStaticParams(){return Object.keys(GENRES).map(slug=>({slug}));}
-export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{const {slug}=await params;const genre=GENRES[slug];if(!genre)return{title:'Genre not found',robots:{index:false}};return{title:`${genre.name} Movies & TV Series`,description:`Browse popular ${genre.name.toLowerCase()} movies and TV series on Cinevero.`,alternates:{canonical:`${SITE_URL}/genre/${slug}`},openGraph:{title:`${genre.name} Movies & TV Series | Cinevero`,description:`Browse ${genre.name.toLowerCase()} movies and TV series on Cinevero.`,url:`${SITE_URL}/genre/${slug}`,siteName:'Cinevero',type:'website'}};}
-function Card({item,type}:{item:TmdbTitle;type:'movie'|'tv'}){const title=type==='tv'?item.name||item.original_name:item.title||item.original_title;const date=type==='tv'?item.first_air_date:item.release_date;if(!title)return null;const rating=typeof item.vote_average==='number'&&item.vote_average>0?item.vote_average.toFixed(1):'N/A';return <Link href={`/${type==='tv'?'series':'movie'}/${slugify(title)}-${item.id}`} className="group min-w-0"><div className="aspect-[2/3] overflow-hidden rounded-xl bg-zinc-100">{item.poster_path?<img src={tmdbImage(item.poster_path,'w342')} alt={`${title} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"/>:<div className="flex h-full items-center justify-center text-xs text-zinc-400">No poster</div>}</div><div className="mt-2"><div className="flex items-center gap-2 text-[11px] font-semibold"><span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-600">{type==='tv'?'Series':'Movie'}</span><span className="text-zinc-500">{(date||'').slice(0,4)||'—'}</span></div><h2 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold group-hover:text-red-600">{title}</h2><span className="mt-1 inline-flex items-center gap-1 text-xs text-zinc-500"><Star size={11} fill="currentColor" aria-hidden="true"/>{rating==='N/A'?'Not rated':`${rating}/10`}</span></div></Link>}
-export default async function GenrePage({params}:{params:Promise<{slug:string}>}){const {slug}=await params;const genre=GENRES[slug];if(!genre)notFound();const [movies,series]=await Promise.all([tmdbDiscover('movie',1,{genreId:genre.movie}).catch(()=>({results:[] as TmdbTitle[],total_pages:0})),genre.tv?tmdbDiscover('tv',1,{genreId:genre.tv}).catch(()=>({results:[] as TmdbTitle[],total_pages:0})):Promise.resolve({results:[] as TmdbTitle[],total_pages:0})]);const jsonLd={'@context':'https://schema.org','@type':'CollectionPage',name:`${genre.name} Movies & TV Series`,url:`${SITE_URL}/genre/${slug}`,description:`Browse ${genre.name.toLowerCase()} movies and TV series on Cinevero.`};return <main className="min-h-screen bg-white text-zinc-900"><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd)}}/><SiteHeader/><div className="mx-auto max-w-[1180px] px-4 py-7 sm:px-6"><nav aria-label="Breadcrumb" className="text-xs text-zinc-500"><Link href="/" className="hover:text-red-600">Home</Link><span className="mx-2">/</span><Link href="/genres" className="hover:text-red-600">Genres</Link><span className="mx-2">/</span><span className="text-zinc-700">{genre.name}</span></nav><section className="pt-7"><p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Cinevero genre</p><h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">{genre.name} Movies & TV Series</h1><p className="mt-3 max-w-2xl text-zinc-600">Browse popular {genre.name.toLowerCase()} titles and discover movies and series worth exploring.</p></section><section className="mt-10"><div className="flex items-end justify-between gap-4"><h2 className="text-2xl font-bold">{genre.name} Movies</h2><Link href="/movie" className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">All movies <ArrowRight size={13}/></Link></div><div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">{movies.results.slice(0,18).map(item=><Card key={item.id} item={item} type="movie"/>)}</div></section><section className="mt-14 pb-10"><div className="flex items-end justify-between gap-4"><h2 className="text-2xl font-bold">{genre.name} Series</h2><Link href="/series" className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">All series <ArrowRight size={13}/></Link></div><div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">{series.results.slice(0,18).map(item=><Card key={item.id} item={item} type="tv"/>)}</div></section></div></main>;}
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
+
+export function generateStaticParams() {
+  return Object.keys(GENRES).map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const genre = GENRES[slug];
+  if (!genre) return { title: 'Genre not found', robots: { index: false } };
+
+  const description = `Browse popular ${genre.name.toLowerCase()} movies and TV series on Cinevero.`;
+  return {
+    title: `${genre.name} Movies & TV Series`,
+    description,
+    alternates: { canonical: `${SITE_URL}/genre/${slug}` },
+    openGraph: {
+      title: `${genre.name} Movies & TV Series | Cinevero`,
+      description,
+      url: `${SITE_URL}/genre/${slug}`,
+      siteName: 'Cinevero',
+      type: 'website',
+    },
+  };
+}
+
+function Card({ item, type }: { item: TmdbTitle; type: 'movie' | 'tv' }) {
+  const title = type === 'tv'
+    ? item.name || item.original_name
+    : item.title || item.original_title;
+  const date = type === 'tv' ? item.first_air_date : item.release_date;
+  if (!title) return null;
+
+  const rating =
+    typeof item.vote_average === 'number' && item.vote_average > 0
+      ? item.vote_average.toFixed(1)
+      : 'N/A';
+
+  return (
+    <Link
+      href={`/${type === 'tv' ? 'series' : 'movie'}/${slugify(title)}-${item.id}`}
+      className="group min-w-0"
+    >
+      <div className="aspect-[2/3] overflow-hidden rounded-xl bg-zinc-100">
+        {item.poster_path ? (
+          <img
+            src={tmdbImage(item.poster_path, 'w342')}
+            alt={`${title} poster`}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-xs text-zinc-400">No poster</div>
+        )}
+      </div>
+      <div className="mt-2">
+        <div className="flex items-center gap-2 text-[11px] font-semibold">
+          <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-600">
+            {type === 'tv' ? 'Series' : 'Movie'}
+          </span>
+          <span className="text-zinc-500">{(date || '').slice(0, 4) || '—'}</span>
+        </div>
+        <h2 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold group-hover:text-red-600">{title}</h2>
+        <span className="mt-1 inline-flex items-center gap-1 text-xs text-zinc-500">
+          <Star size={11} fill="currentColor" aria-hidden="true" />
+          {rating === 'N/A' ? 'Not rated' : `${rating}/10`}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+export default async function GenrePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const genre = GENRES[slug];
+  if (!genre) notFound();
+
+  const [movies, series] = await Promise.all([
+    tmdbDiscover('movie', 1, { genreId: genre.movie }).catch(() => ({
+      results: [] as TmdbTitle[],
+      total_pages: 0,
+    })),
+    genre.tv
+      ? tmdbDiscover('tv', 1, { genreId: genre.tv }).catch(() => ({
+          results: [] as TmdbTitle[],
+          total_pages: 0,
+        }))
+      : Promise.resolve({ results: [] as TmdbTitle[], total_pages: 0 }),
+  ]);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${genre.name} Movies & TV Series`,
+    url: `${SITE_URL}/genre/${slug}`,
+    description: `Browse ${genre.name.toLowerCase()} movies and TV series on Cinevero.`,
+  };
+
+  return (
+    <main className="min-h-screen bg-white text-zinc-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <SiteHeader />
+
+      <div className="mx-auto max-w-[1180px] px-4 py-7 sm:px-6">
+        <nav aria-label="Breadcrumb" className="text-xs text-zinc-500">
+          <Link href="/" className="hover:text-red-600">Home</Link>
+          <span className="mx-2">/</span>
+          <Link href="/genres" className="hover:text-red-600">Genres</Link>
+          <span className="mx-2">/</span>
+          <span className="text-zinc-700">{genre.name}</span>
+        </nav>
+
+        <section className="pt-7">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Cinevero genre</p>
+          <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
+            {genre.name} Movies & TV Series
+          </h1>
+          <p className="mt-3 max-w-2xl text-zinc-600">
+            Browse popular {genre.name.toLowerCase()} titles and discover movies and series worth exploring.
+          </p>
+        </section>
+
+        <section className="mt-10">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="text-2xl font-bold">{genre.name} Movies</h2>
+            <Link href="/movie" className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+              All movies <ArrowRight size={13} />
+            </Link>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+            {movies.results.slice(0, 18).map((item) => (
+              <Card key={item.id} item={item} type="movie" />
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-14 pb-10">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="text-2xl font-bold">{genre.name} Series</h2>
+            <Link href="/series" className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+              All series <ArrowRight size={13} />
+            </Link>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+            {series.results.slice(0, 18).map((item) => (
+              <Card key={item.id} item={item} type="tv" />
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
