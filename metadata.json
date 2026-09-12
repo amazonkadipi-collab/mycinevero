@@ -1,6 +1,0 @@
-{
-  "name": "Video Portal",
-  "description": "A single-page video search and playback portal with embedded player modal, search, and pagination.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
