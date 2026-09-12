@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import CatalogHome from '@/components/CatalogHome';
 import { tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming } from '@/lib/tmdb';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://watchmovies4.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Cinevero – Movies & TV Series Discovery',
