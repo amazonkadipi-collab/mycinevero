@@ -30,7 +30,7 @@ export default function CatalogHome({ trending, popularMovies, popularSeries, la
   const featured = trending[0] || popularMovies[0];
   return <div className="min-h-screen bg-white text-zinc-900"><SiteHeader /><main className="mx-auto max-w-[1180px] px-4 sm:px-6">
     <section className="relative mt-5 min-h-[440px] overflow-hidden rounded-2xl bg-zinc-950 text-white sm:mt-7">
-      {featured?.backdrop_path && <img src={tmdbImage(featured.backdrop_path,'w1280')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-55" />}
+      {featured?.backdrop_path && <img src={tmdbImage(featured.backdrop_path,'original')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-55" />}
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-zinc-950/25" />
       <div className="relative flex min-h-[440px] max-w-2xl flex-col justify-end p-6 sm:p-10">
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-red-400">CINEVERO · MOVIES & SERIES</p>
