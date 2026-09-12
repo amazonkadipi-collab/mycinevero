@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import LegalFooter from '@/components/LegalFooter';
 
-const GOOGLE_SITE_VERIFICATION = 'xWD_h_owizc_wuZTFwNy4hCe0t09WB7Z0r4uu-wQSG4';
+const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 
 export const metadata: Metadata = {
