@@ -7,22 +7,21 @@ const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://elovex.vercel.app'),
-  title: { default: 'Elovex – Free Adult Videos, Porn Videos & Trending Clips', template: '%s | Elovex' },
-  description: 'Discover free adult videos, porn videos, trending clips, popular searches, and fresh daily uploads on Elovex. Browse categories, watch related videos, and find new clips fast.',
-  keywords: ['Elovex', 'free adult videos', 'porn videos', 'xxx videos', 'trending adult videos', 'new adult videos', 'amateur videos', 'couples videos', 'webcam videos', 'adult video categories', 'watch adult videos'],
+  title: { default: 'Elovex – Video Discovery', template: '%s | Elovex' },
+  description: 'Discover videos, trending clips, popular searches, and fresh uploads on Elovex.',
+  keywords: ['Elovex', 'video discovery', 'videos', 'trending videos', 'new videos', 'video search'],
   applicationName: 'Elovex',
   alternates: { canonical: '/', languages: { en: '/', 'x-default': '/' } },
   robots: { index: true, follow: true, 'max-image-preview': 'large' },
-  other: { rating: 'adult', 'rating:content': 'adult' },
   openGraph: {
-    title: 'Elovex – Free Adult Videos, Porn Videos & Trending Clips',
-    description: 'Discover free adult videos, porn videos, trending clips, and fresh daily uploads on Elovex.',
+    title: 'Elovex – Video Discovery',
+    description: 'Discover videos, trending clips, popular searches, and fresh uploads on Elovex.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Elovex – Free Adult Videos, Porn Videos & Trending Clips',
-    description: 'Discover free adult videos, porn videos, trending clips, and fresh daily uploads on Elovex.',
+    title: 'Elovex – Video Discovery',
+    description: 'Discover videos, trending clips, popular searches, and fresh uploads on Elovex.',
   },
   verification: { google: GOOGLE_SITE_VERIFICATION },
 };
