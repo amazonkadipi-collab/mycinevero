@@ -2,10 +2,30 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms of Use',
-  description: 'Terms governing access to and use of the Elovex website.',
+  description: 'Terms governing access to and use of the Watch Movies 4 website.',
   alternates: { canonical: '/terms' },
 };
 
 export default function TermsPage() {
-  return <main className="mx-auto max-w-3xl px-5 py-12 text-zinc-800"><h1 className="text-3xl font-bold">Terms of Use</h1><p className="mt-3 text-sm text-zinc-500">Last updated: September 11, 2026</p><section className="prose prose-zinc mt-8 max-w-none"><h2>Acceptance</h2><p>By accessing Elovex, you agree to these Terms and to comply with applicable law. If you do not agree, leave the site.</p><h2>Age requirement</h2><p>You must be at least 18 years old, or the applicable legal age where you live, to access age-restricted content. Do not use the site if access is unlawful in your location.</p><h2>Acceptable use</h2><p>Do not misuse the service, bypass security controls, scrape the service in a way that harms availability, upload unlawful material, infringe rights, distribute malware, or attempt unauthorized access.</p><h2>Third-party content</h2><p>Elovex may index or display links, thumbnails, embeds, or metadata supplied by third parties. We do not guarantee the accuracy, availability, legality, or suitability of third-party material.</p><h2>Availability and changes</h2><p>The service may change, be interrupted, or be removed without notice. We may update these Terms and will publish the updated version on this page.</p><h2>Contact</h2><p>To report content or ask a question, use the <a href="/contact">Contact page</a>. For copyright notices, use the <a href="/dmca">DMCA / Report page</a>.</p><p className="text-sm text-zinc-500">These general terms are not legal advice and should be reviewed by qualified counsel for your operating entity and jurisdiction.</p></section></main>;
+  return (
+    <main className="mx-auto max-w-3xl px-5 py-12 text-zinc-800">
+      <h1 className="text-3xl font-bold">Terms of Use</h1>
+      <p className="mt-3 text-sm text-zinc-500">Last updated: September 11, 2026</p>
+      <section className="prose prose-zinc mt-8 max-w-none">
+        <h2>Acceptance</h2>
+        <p>By accessing Watch Movies 4, you agree to these Terms and to comply with applicable law. If you do not agree, leave the site.</p>
+        <h2>Age requirement</h2>
+        <p>You must be at least 18 years old, or the applicable legal age where you live, to access age-restricted content. Do not use the site if access is unlawful in your location.</p>
+        <h2>Acceptable use</h2>
+        <p>Do not misuse the service, bypass security controls, scrape the service in a way that harms availability, upload unlawful material, infringe rights, distribute malware, or attempt unauthorized access.</p>
+        <h2>Third-party content</h2>
+        <p>Watch Movies 4 may display links, posters, embeds, or metadata supplied by third parties. We do not guarantee the accuracy, availability, legality, or suitability of third-party material.</p>
+        <h2>Availability and changes</h2>
+        <p>The service may change, be interrupted, or be removed without notice. We may update these Terms and will publish the updated version on this page.</p>
+        <h2>Contact</h2>
+        <p>To report content or ask a question, use the <a href="/contact">Contact page</a>. For copyright notices, use the <a href="/dmca">DMCA / Report page</a>.</p>
+        <p className="text-sm text-zinc-500">These general terms are not legal advice and should be reviewed by qualified counsel for your operating entity and jurisdiction.</p>
+      </section>
+    </main>
+  );
 }
