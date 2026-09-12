@@ -32,6 +32,6 @@ export default async function PaginatedVideoPage({ params, searchParams }: { par
       url: `${SITE_URL}/p/${initialPage}?${new URLSearchParams({ ...(category ? { category } : {}), order }).toString()}`,
       isPartOf: { '@type': 'WebSite', name: 'Elovex', url: SITE_URL },
     }) }} />
-    <VideoPortalClient initialPage={initialPage} initialSearch={category} initialOrder={order} initialVideos={listing.videos} initialTotalCount={listing.totalCount} initialTotalPages={listing.totalPages} initialError={listing.error} />
+    <VideoPortalClient initialPage={initialPage} initialSearch={category} initialOrder={order} initialVideos={listing.videos} initialTotalPages={listing.totalPages} initialError={listing.error} />
   </>;
 }

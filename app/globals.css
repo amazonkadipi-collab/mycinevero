@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-:root { --font-xvideos: Arial, sans-serif; }
-html, body { font-family: var(--font-xvideos); }
-
-/* Retired category taxonomy: keep the existing client component intact while the new taxonomy is prepared. */
-.order-1 > button:first-child { display: none !important; }
+:root { --font-xvideos: Arial, sans-serif; color-scheme: dark; }
+html, body { font-family: var(--font-xvideos); background: #09090b; }
+body { margin: 0; }
+button, a { -webkit-tap-highlight-color: transparent; }

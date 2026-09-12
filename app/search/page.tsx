@@ -20,5 +20,5 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const query = q?.trim() || '';
   const order = ['most-popular', 'latest', 'longest', 'top-rated', 'top-monthly', 'random'].includes(requestedOrder || '') ? requestedOrder as string : 'most-popular';
   const listing = await loadVideoListing(1, query, order, 50);
-  return <VideoPortalClient initialPage={1} initialSearch={query} initialOrder={order} initialVideos={listing.videos} initialTotalCount={listing.totalCount} initialTotalPages={listing.totalPages} initialError={listing.error} />;
+  return <VideoPortalClient initialPage={1} initialSearch={query} initialOrder={order} initialVideos={listing.videos} initialTotalPages={listing.totalPages} initialError={listing.error} />;
 }

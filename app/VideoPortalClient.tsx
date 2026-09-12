@@ -1,185 +1,25 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Menu, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu, Play, Search, Sparkles, X } from 'lucide-react';
 import type { VideoItem } from '@/lib/video-listing';
 
-type Props = {
-  initialPage: number;
-  initialSearch: string;
-  initialOrder: string;
-  initialVideos: VideoItem[];
-  initialTotalCount: number;
-  initialTotalPages: number;
-  initialError?: string;
-  initialFilters?: { date: string; duration: string; quality: string; viewed: string };
-};
-
-function thumb(video: VideoItem) {
-  return video.default_thumb?.src || video.thumbnail || video.thumbs?.[0]?.src || video.thumb || '';
-}
-
-function duration(video: VideoItem) {
-  return video.length_min || video.duration || '';
-}
-
-function formatViews(value?: number) {
-  if (!Number.isFinite(value)) return '';
-  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value));
-}
+type Props = { initialPage: number; initialSearch: string; initialOrder: string; initialVideos: VideoItem[]; initialTotalPages: number; initialError?: string };
+const fallbackPosters = ['https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80','https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=80','https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=900&q=80','https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=900&q=80'];
+function poster(video: VideoItem, index: number) { return video.thumbnail || video.thumb || video.default_thumb?.src || video.thumbs?.[0]?.src || fallbackPosters[index % fallbackPosters.length]; }
+function formatViews(value?: number) { if (value === undefined || Number.isNaN(Number(value))) return ''; return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value)); }
 
 export default function VideoPortalClient(props: Props) {
-  const [query, setQuery] = useState(props.initialSearch || '');
-  const [draft, setDraft] = useState(props.initialSearch || '');
-  const [page, setPage] = useState(Math.max(1, props.initialPage));
-  const [videos, setVideos] = useState(props.initialVideos);
-  const [totalPages, setTotalPages] = useState(Math.max(1, props.initialTotalPages));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(props.initialError || '');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(Boolean(props.initialSearch));
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const paramsFor = useMemo(() => new URLSearchParams({
-    query: query || 'all',
-    page: String(page),
-    per_page: '50',
-    order: props.initialOrder || 'latest',
-    format: 'json',
-  }), [query, page, props.initialOrder]);
-
-  useEffect(() => {
-    if (page === 1 && query === props.initialSearch && !props.initialError) return;
-    const controller = new AbortController();
-    setLoading(true);
-    setError('');
-    fetch(`/api/videos/search?${paramsFor.toString()}`, { signal: controller.signal, headers: { Accept: 'application/json' } })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data?.error || `Video API returned HTTP ${response.status}`);
-        return data;
-      })
-      .then((data) => {
-        const list = Array.isArray(data?.videos) ? data.videos : [];
-        setVideos(list);
-        setTotalPages(Math.max(1, Number(data?.total_pages || (list.length ? Math.ceil(Number(data?.total_count || list.length) / 50) : 1))));
-      })
-      .catch((err) => {
-        if (err?.name !== 'AbortError') {
-          setVideos([]);
-          setTotalPages(1);
-          setError(err instanceof Error ? err.message : 'Unable to load videos');
-        }
-      })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
-  }, [paramsFor, page, query, props.initialError, props.initialSearch]);
-
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const value = draft.trim();
-    setQuery(value);
-    setPage(1);
-    setSearchOpen(true);
-    window.history.pushState({}, '', value ? `/?k=${encodeURIComponent(value)}` : '/');
-  };
-
-  const openSearch = () => {
-    setMenuOpen(false);
-    setSearchOpen(true);
-    window.setTimeout(() => searchInputRef.current?.focus(), 0);
-  };
-
-  const goToPage = (next: number) => {
-    if (next < 1 || next > totalPages || next === page) return;
-    setPage(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const pageNumbers = useMemo(() => {
-    const numbers = new Set<number>([1, totalPages, page]);
-    for (let i = -2; i <= 2; i += 1) {
-      const n = page + i;
-      if (n >= 1 && n <= totalPages) numbers.add(n);
-    }
-    return [...numbers].sort((a, b) => a - b);
-  }, [page, totalPages]);
-
-  return (
-    <div className="min-h-screen bg-white text-zinc-900">
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
-        <div className="relative mx-auto flex h-16 max-w-[1400px] items-center px-4 lg:px-6">
-          <div className="flex items-center gap-1">
-            <button type="button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100">
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-            <button type="button" aria-label="Search videos" onClick={openSearch} className="flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100">
-              <Search className="h-5 w-5" />
-            </button>
-          </div>
-          <Link href="/" aria-label="Elovex home" className="absolute left-1/2 -translate-x-1/2 text-xl font-black tracking-tight">
-            <span className="text-zinc-950">ELO</span><span className="text-red-600">VEX</span>
-          </Link>
-        </div>
-
-        {menuOpen && (
-          <div className="border-t border-zinc-200 bg-white shadow-sm">
-            <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-3 text-sm lg:px-6">
-              <Link href="/" onClick={() => setMenuOpen(false)} className="font-medium text-zinc-900 hover:text-red-600">Home</Link>
-              <button type="button" onClick={openSearch} className="font-medium text-zinc-600 hover:text-red-600">Search</button>
-            </div>
-          </div>
-        )}
-
-        {searchOpen && (
-          <div className="border-t border-zinc-200 bg-white">
-            <form onSubmit={submitSearch} className="mx-auto flex max-w-[900px] items-center gap-2 px-4 py-3">
-              <div className="flex min-w-0 flex-1 items-center rounded-md border border-zinc-300 bg-white px-3">
-                <Search className="h-4 w-4 shrink-0 text-zinc-400" />
-                <input ref={searchInputRef} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
-              </div>
-              <button type="submit" className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Search</button>
-              {!query && <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="rounded-md p-2 text-zinc-500 hover:bg-zinc-100"><X className="h-5 w-5" /></button>}
-            </form>
-          </div>
-        )}
-      </header>
-
-      <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
-        {loading && <div className="min-h-[300px]" />}
-        {!loading && error && <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}</div>}
-        {!loading && !error && videos.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {videos.map((video) => {
-              const id = String(video.id || '');
-              if (!id) return null;
-              const image = thumb(video);
-              return (
-                <Link key={id} href={`/videos/${encodeURIComponent(id)}`} className="group min-w-0">
-                  <div className="aspect-video overflow-hidden rounded-md bg-zinc-100">
-                    {image ? <img src={image} alt={video.title || 'Video thumbnail'} loading="lazy" className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" /> : <div className="h-full w-full" />}
-                  </div>
-                  <h2 className="mt-2 line-clamp-2 text-sm font-semibold leading-5 group-hover:text-red-600">{video.title || 'Untitled video'}</h2>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
-                    {video.uploader && <span className="truncate">{video.uploader}</span>}
-                    {duration(video) && <span>{duration(video)}</span>}
-                    {video.views !== undefined && <span>{formatViews(video.views)} views</span>}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
-        {!loading && !error && videos.length > 0 && totalPages > 1 && (
-          <nav aria-label="Pagination" className="mt-8 flex flex-wrap justify-center gap-2">
-            <button type="button" disabled={page <= 1} onClick={() => goToPage(page - 1)} className="rounded-md border px-3 py-2 text-sm disabled:opacity-40">Previous</button>
-            {pageNumbers.map((number) => <button key={number} type="button" onClick={() => goToPage(number)} className={`rounded-md border px-3 py-2 text-sm ${number === page ? 'border-red-600 bg-red-600 text-white' : 'bg-white'}`}>{number}</button>)}
-            <button type="button" disabled={page >= totalPages} onClick={() => goToPage(page + 1)} className="rounded-md border px-3 py-2 text-sm disabled:opacity-40">Next</button>
-          </nav>
-        )}
-      </main>
-    </div>
-  );
+  const [videos, setVideos] = useState(props.initialVideos); const [query, setQuery] = useState(props.initialSearch || ''); const [draft, setDraft] = useState(props.initialSearch || ''); const [order, setOrder] = useState(props.initialOrder || 'latest'); const [page, setPage] = useState(Math.max(1, props.initialPage)); const [totalPages, setTotalPages] = useState(Math.max(1, props.initialTotalPages)); const [loading, setLoading] = useState(false); const [error, setError] = useState(props.initialError || ''); const [menuOpen, setMenuOpen] = useState(false); const [searchOpen, setSearchOpen] = useState(Boolean(props.initialSearch)); const inputRef = useRef<HTMLInputElement>(null);
+  const load = async (nextPage: number, nextQuery = query, nextOrder = order) => { setLoading(true); setError(''); try { const params = new URLSearchParams({ page: String(nextPage), per_page: '24', query: nextQuery || 'all', order: nextOrder, format: 'json' }); const response = await fetch(`/api/videos/search?${params}`, { headers: { Accept: 'application/json' } }); const data = await response.json(); if (!response.ok) throw new Error(data?.error || 'Unable to load the catalogue'); setVideos(Array.isArray(data?.videos) ? data.videos : []); setTotalPages(Math.max(1, Number(data?.total_pages || 1))); setPage(nextPage); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to load the catalogue'); setVideos([]); } finally { setLoading(false); } };
+  const submitSearch = (event: FormEvent) => { event.preventDefault(); const value = draft.trim(); setQuery(value); setSearchOpen(true); setMenuOpen(false); window.history.pushState({}, '', value ? `/?k=${encodeURIComponent(value)}` : '/'); load(1, value, order); };
+  const changeOrder = (value: string) => { setOrder(value); load(1, query, value); };
+  const pageNumbers = useMemo(() => Array.from({ length: Math.min(totalPages, 5) }, (_, index) => Math.max(1, Math.min(totalPages - 4, page - 2)) + index), [page, totalPages]);
+  return <div className="min-h-screen bg-[#09090b] text-white">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#09090b]/90 backdrop-blur-xl"><div className="mx-auto flex h-[74px] max-w-[1440px] items-center gap-7 px-5 lg:px-8"><button onClick={() => setMenuOpen(!menuOpen)} aria-label="Open menu" className="rounded-lg p-2 text-zinc-300 transition hover:bg-white/10 hover:text-white lg:hidden">{menuOpen ? <X size={22} /> : <Menu size={22} />}</button><Link href="/" className="text-2xl font-black tracking-[-0.08em]"><span className="text-white">ELO</span><span className="text-[#ff375f]">VEX</span></Link><nav className="hidden items-center gap-7 text-sm text-zinc-400 lg:flex"><Link className="font-semibold text-white" href="/">Home</Link><button onClick={() => { setSearchOpen(true); inputRef.current?.focus(); }} className="transition hover:text-white">Films</button><button onClick={() => { setSearchOpen(true); inputRef.current?.focus(); }} className="transition hover:text-white">Series</button></nav><form onSubmit={submitSearch} className="ml-auto hidden w-full max-w-[360px] items-center rounded-full border border-white/10 bg-white/[0.06] px-4 md:flex"><Search size={16} className="text-zinc-500" /><input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Search movies and series" className="w-full bg-transparent px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-500" /></form><button onClick={() => { setSearchOpen(!searchOpen); setTimeout(() => inputRef.current?.focus(), 0); }} aria-label="Search" className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white md:hidden"><Search size={20} /></button><Link href="/contact" className="hidden rounded-full bg-[#ff375f] px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_24px_rgba(255,55,95,.22)] transition hover:bg-[#ff5275] sm:block">Join Elovex</Link></div>{menuOpen && <div className="border-t border-white/10 bg-[#111114] px-6 py-4 lg:hidden"><div className="flex gap-5 text-sm text-zinc-300"><Link href="/">Home</Link><button onClick={() => setSearchOpen(true)}>Films</button><button onClick={() => setSearchOpen(true)}>Series</button></div></div>}{searchOpen && <form onSubmit={submitSearch} className="border-t border-white/10 bg-[#111114] px-5 py-3 md:hidden"><div className="flex items-center rounded-full border border-white/10 bg-white/[0.06] px-4"><Search size={16} className="text-zinc-500" /><input ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Search movies and series" className="w-full bg-transparent px-3 py-2.5 text-sm outline-none" /></div></form>}</header>
+    <main className="mx-auto max-w-[1440px] px-5 pb-16 lg:px-8"><section className="relative mt-7 overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-[#24202c] via-[#15131a] to-[#0f0f12] px-7 py-12 sm:px-12 lg:py-16"><div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#ff375f]/20 blur-3xl" /><div className="absolute bottom-0 right-16 h-44 w-44 rounded-full bg-[#7c3aed]/20 blur-3xl" /><div className="relative max-w-2xl"><div className="mb-5 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-[#ff6b85]"><Sparkles size={14} /> Curated for your next watch</div><h1 className="max-w-xl text-4xl font-black tracking-[-0.06em] sm:text-6xl">Your next story<br /><span className="text-[#ff375f]">starts here.</span></h1><p className="mt-5 max-w-lg text-base leading-7 text-zinc-400">Discover movies and series from your own catalogue, beautifully organised in one place.</p><button onClick={() => document.getElementById('catalogue')?.scrollIntoView({ behavior: 'smooth' })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-zinc-200"><Play size={15} fill="currentColor" /> Explore catalogue</button></div></section>
+      <section id="catalogue" className="mt-12"><div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#ff375f]">Elovex originals</p><h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{query ? `Results for “${query}”` : 'Fresh on Elovex'}</h2></div><div className="flex items-center gap-2 text-sm"><button onClick={() => changeOrder('latest')} className={`rounded-full px-4 py-2 transition ${order === 'latest' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-white/10 hover:text-white'}`}>Latest</button><button onClick={() => changeOrder('most-popular')} className={`rounded-full px-4 py-2 transition ${order === 'most-popular' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-white/10 hover:text-white'}`}>Popular</button></div></div>
+        {loading && <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">{Array.from({ length: 12 }).map((_, index) => <div key={index} className="aspect-[2/3] animate-pulse rounded-2xl bg-white/[0.07]" />)}</div>}{!loading && error && <div className="rounded-2xl border border-[#ff375f]/30 bg-[#ff375f]/10 p-6 text-sm text-[#ff9caf]">{error}<p className="mt-2 text-zinc-400">Configure your private movie API in the environment variables to populate this catalogue.</p></div>}{!loading && !error && videos.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-12 text-center text-zinc-400">No titles found. Try another search.</div>}{!loading && !error && videos.length > 0 && <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">{videos.map((video, index) => { const id = String(video.id || ''); return <Link key={`${id}-${index}`} href={`/videos/${encodeURIComponent(id)}`} className="group min-w-0"><div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-zinc-900"><img src={poster(video, index)} alt={video.title || 'Movie poster'} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-70" /><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" /><span className="absolute bottom-3 left-3 flex h-9 w-9 translate-y-2 items-center justify-center rounded-full bg-[#ff375f] opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100"><Play size={14} fill="white" /></span>{video.quality && <span className="absolute right-2 top-2 rounded bg-black/70 px-2 py-1 text-[10px] font-bold uppercase">{video.quality}</span>}</div><h3 className="mt-3 line-clamp-1 text-sm font-bold text-zinc-100 transition group-hover:text-[#ff6b85]">{video.title || 'Untitled title'}</h3><div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">{video.year && <span>{video.year}</span>}{video.rate && <span>★ {video.rate}</span>}{video.views !== undefined && <span>{formatViews(video.views)} views</span>}</div></Link>; })}</div>}</section>{totalPages > 1 && <nav aria-label="Pagination" className="mt-12 flex justify-center gap-2">{page > 1 && <button onClick={() => load(page - 1)} className="rounded-full border border-white/10 p-2 text-zinc-400 hover:bg-white/10 hover:text-white"><ChevronLeft size={18} /></button>}{pageNumbers.map((number) => <button key={number} onClick={() => load(number)} className={`h-9 min-w-9 rounded-full px-3 text-sm font-bold ${number === page ? 'bg-[#ff375f] text-white' : 'text-zinc-400 hover:bg-white/10'}`}>{number}</button>)}{page < totalPages && <button onClick={() => load(page + 1)} className="rounded-full border border-white/10 p-2 text-zinc-400 hover:bg-white/10 hover:text-white"><ChevronRight size={18} /></button>}</nav>}</main>
+  </div>;
 }
