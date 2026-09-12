@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import LegalFooter from '@/components/LegalFooter';
 
-const GOOGLE_SITE_VERIFICATION = 'H4u6KirWpzjlFtmro0OCtDGzspAcGSb0sA63KBVCmbQ';
+const GOOGLE_SITE_VERIFICATION = 'xWD_h_owizc_wuZTFwNy4hCe0t09WB7Z0r4uu-wQSG4';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://watchmovies4.vercel.app';
 
 export const metadata: Metadata = {
