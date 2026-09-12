@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import VideoPortalClient from './VideoPortalClient';
+import { loadVideoListing } from '@/lib/video-listing';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://elovex.vercel.app';
 
@@ -29,8 +30,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   if (params.category?.trim()) notFound();
 
   const search = params.k?.trim() || '';
+  const listing = await loadVideoListing(1, search, params.order || 'latest', 24);
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Elovex', url: SITE_URL, description: 'Movies and series catalogue.', potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/?k={search_term_string}`, 'query-input': 'required name=search_term_string' } }) }} />
-    <VideoPortalClient initialSearch={search} />
+    <VideoPortalClient initialSearch={search} initialPage={1} initialOrder={params.order || 'latest'} initialVideos={listing.videos} initialTotalPages={listing.totalPages} initialError={listing.error} />
   </>;
 }
