@@ -83,7 +83,7 @@ async function fetchJsonText(url: string, timeoutMs = 10000): Promise<any> {
 
 export type ListingFilters = { date?: string; duration?: string; quality?: string; viewed?: string };
 
-export async function loadVideoListing(page: number, category = '', order = 'latest', perPage = 50, filters: ListingFilters = {}): Promise<VideoListing> {
+export async function loadVideoListing(page: number, query = '', order = 'latest', perPage = 50, filters: ListingFilters = {}): Promise<VideoListing> {
   const safePage = Math.max(1, Number(page) || 1);
   const params = new URLSearchParams({
     page: String(safePage),
@@ -93,12 +93,8 @@ export async function loadVideoListing(page: number, category = '', order = 'lat
     lq: '1',
     format: 'json',
   });
-  if (category.trim()) {
-    params.set('category', category.trim());
-    params.set('query', category.trim());
-  } else {
-    params.set('query', 'all');
-  }
+  if (query.trim()) params.set('query', query.trim());
+  else params.set('query', 'all');
 
   for (const [key, value] of Object.entries(filters)) if (value && value !== 'all') params.set(key, value);
 
