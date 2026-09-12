@@ -1,8 +1,8 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Menu, Search, SlidersHorizontal, X } from 'lucide-react';
 import type { VideoItem } from '@/lib/video-listing';
 
 type Props = {
@@ -55,6 +55,9 @@ export default function VideoPortalClient(props: Props) {
   const [error, setError] = useState(props.initialError || '');
   const [filters, setFilters] = useState<Record<string, string>>(props.initialFilters || { date: 'all', duration: 'all', quality: 'all', viewed: 'all' });
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(Boolean(props.initialSearch));
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const paramsFor = useMemo(() => {
     const params = new URLSearchParams({ query: query || 'all', page: String(page), per_page: '50', order, format: 'json' });
@@ -89,8 +92,15 @@ export default function VideoPortalClient(props: Props) {
     const value = draft.trim();
     setQuery(value);
     setPage(1);
+    setSearchOpen(true);
     const url = value ? `/?k=${encodeURIComponent(value)}` : '/';
     window.history.pushState({}, '', url);
+  };
+
+  const openSearch = () => {
+    setMenuOpen(false);
+    setSearchOpen(true);
+    window.setTimeout(() => searchInputRef.current?.focus(), 0);
   };
 
   const changeOrder = (value: string) => {
@@ -121,16 +131,53 @@ export default function VideoPortalClient(props: Props) {
   return (
     <div className="min-h-screen bg-white text-zinc-900">
       <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-3 lg:px-6">
-          <Link href="/" className="shrink-0 text-xl font-black tracking-tight"><span className="text-zinc-950">ELO</span><span className="text-red-600">VEX</span></Link>
-          <form onSubmit={submitSearch} className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="flex min-w-0 flex-1 items-center rounded-md border border-zinc-300 bg-white px-3">
-              <Search className="h-4 w-4 shrink-0 text-zinc-400" />
-              <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
-            </div>
-            <button type="submit" className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Search</button>
-          </form>
+        <div className="relative mx-auto flex h-16 max-w-[1400px] items-center px-4 lg:px-6">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+              className="flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100"
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <button
+              type="button"
+              aria-label="Search videos"
+              onClick={openSearch}
+              className="flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+          </div>
+
+          <Link href="/" aria-label="Elovex home" className="absolute left-1/2 -translate-x-1/2 text-xl font-black tracking-tight">
+            <span className="text-zinc-950">ELO</span><span className="text-red-600">VEX</span>
+          </Link>
         </div>
+
+        {menuOpen && (
+          <div className="border-t border-zinc-200 bg-white shadow-sm">
+            <div className="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-3 text-sm lg:px-6">
+              <Link href="/" onClick={() => setMenuOpen(false)} className="font-medium text-zinc-900 hover:text-red-600">Home</Link>
+              <button type="button" onClick={openSearch} className="font-medium text-zinc-600 hover:text-red-600">Search</button>
+            </div>
+          </div>
+        )}
+
+        {searchOpen && (
+          <div className="border-t border-zinc-200 bg-white">
+            <form onSubmit={submitSearch} className="mx-auto flex max-w-[900px] items-center gap-2 px-4 py-3">
+              <div className="flex min-w-0 flex-1 items-center rounded-md border border-zinc-300 bg-white px-3">
+                <Search className="h-4 w-4 shrink-0 text-zinc-400" />
+                <input ref={searchInputRef} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Search videos" aria-label="Search videos" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
+              </div>
+              <button type="submit" className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Search</button>
+              {!query && <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="rounded-md p-2 text-zinc-500 hover:bg-zinc-100"><X className="h-5 w-5" /></button>}
+            </form>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-[1400px] px-4 py-5 lg:px-6">
