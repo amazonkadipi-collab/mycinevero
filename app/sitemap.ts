@@ -43,11 +43,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const unique = new Map(detailEntries.map((entry) => [entry.url, entry]));
 
   return [
-    { url: SITE_URL, changeFrequency: 'daily', priority: 1 },
-    { url: `${SITE_URL}/movie`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/series`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/genres`, changeFrequency: 'weekly', priority: 0.7 },
+    { url: SITE_URL, changeFrequency: 'daily' as const, priority: 1 },
+    { url: `${SITE_URL}/movie`, changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${SITE_URL}/series`, changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${SITE_URL}/genres`, changeFrequency: 'weekly' as const, priority: 0.7 },
     ...GENRES.map((slug) => ({ url: `${SITE_URL}/genre/${slug}`, changeFrequency: 'weekly' as const, priority: 0.6 })),
-    ...unique.values(),
+    ...Array.from(unique.values()),
   ];
 }
