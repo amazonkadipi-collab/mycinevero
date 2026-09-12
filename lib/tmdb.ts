@@ -30,7 +30,7 @@ export type TmdbTitle = {
   credits?: { cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[]; crew?: { id: number; name: string; department?: string; job?: string; profile_path?: string | null }[] };
   recommendations?: { results: TmdbTitle[] };
   videos?: { results: { id: string; key: string; name: string; site: string; type: string; official?: boolean; published_at?: string }[] };
-  watch_providers?: { results?: Record<string, { link?: string; flatrate?: { provider_id: number; provider_name: string; logo_path?: string }[]; rent?: { provider_id: number; provider_name: string; logo_path?: string }[]; buy?: { provider_id: number; provider_name: string; logo_path?: string }[] }> } };
+  watch_providers?: { results?: Record<string, { link?: string; flatrate?: { provider_id: number; provider_name: string; logo_path?: string }[]; rent?: { provider_id: number; provider_name: string; logo_path?: string }[]; buy?: { provider_id: number; provider_name: string; logo_path?: string }[] }> };
   seasons?: TmdbSeason[];
   external_ids?: { imdb_id?: string | null; tvdb_id?: number | null; wikidata_id?: string | null };
 };
