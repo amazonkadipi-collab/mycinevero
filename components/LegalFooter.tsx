@@ -17,6 +17,13 @@ export default function LegalFooter() {
           </nav>
         </div>
         <p className="text-xs leading-5 text-zinc-500">© {new Date().getFullYear()} Cinevero. Metadata and images are provided by third-party services. Cinevero does not host movie or TV video files.</p>
+        <div className="border-t border-zinc-200 pt-4 text-xs leading-5 text-zinc-500">
+          <p>
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+            {' '}
+            <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer" className="font-medium text-zinc-700 hover:text-red-600">The Movie Database (TMDB)</a>
+          </p>
+        </div>
       </div>
     </footer>
   );
