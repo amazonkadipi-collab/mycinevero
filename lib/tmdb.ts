@@ -46,5 +46,11 @@ export async function tmdbUpcoming() { return tmdbFetch<{ results: TmdbTitle[] }
 export async function tmdbSearch(query: string, page = 1) { return tmdbFetch<{ results: TmdbTitle[]; total_pages: number; total_results: number }>('/search/multi', { query, include_adult: 'false', language: 'en-US', page }); }
 export async function tmdbDetails(type: TmdbMediaType, id: number) { return tmdbFetch<TmdbTitle>(`/${type}/${id}`, { language: 'en-US', append_to_response: 'credits,external_ids,videos,recommendations' }, 21600); }
 export async function tmdbGenres(type: TmdbMediaType) { return tmdbFetch<{ genres: { id: number; name: string }[] }>(`/genre/${type}/list`, { language: 'en-US' }, 86400); }
-export async function tmdbDiscover(type: TmdbMediaType, page = 1, genreId?: number) { return tmdbFetch<{ results: TmdbTitle[]; total_pages: number }>(`/discover/${type}`, { language: 'en-US', include_adult: 'false', include_video: 'false', sort_by: 'popularity.desc', page, with_genres: genreId }); }
+export async function tmdbDiscover(type: TmdbMediaType, page = 1, options: { genreId?: number; runtimeMax?: number; voteAverageMin?: number; sortBy?: string } = {}) {
+  return tmdbFetch<{ results: TmdbTitle[]; total_pages: number }>(`/discover/${type}`, {
+    language: 'en-US', include_adult: 'false', include_video: 'false', sort_by: options.sortBy || 'popularity.desc', page,
+    with_genres: options.genreId, with_runtime_lte: type === 'movie' ? options.runtimeMax : undefined,
+    vote_average_gte: options.voteAverageMin,
+  });
+}
 export async function tmdbSeason(seriesId: number, seasonNumber: number) { return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`, { language: 'en-US' }, 21600); }
