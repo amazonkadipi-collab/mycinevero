@@ -1,0 +1,11 @@
+type InsightProps = { title: string; genres: string[]; runtime?: number | null; overview?: string; type?: 'movie' | 'series' };
+
+export default function CineveroInsight({ title, genres, runtime, overview, type = 'movie' }: InsightProps) {
+  const genreText = genres.slice(0, 2).join(' and ') || 'cinematic';
+  const long = typeof runtime === 'number' && runtime >= 140;
+  const short = typeof runtime === 'number' && runtime < 100;
+  const mood = genres.includes('Comedy') || genres.includes('Family') ? 'easygoing and entertaining' : genres.includes('Horror') || genres.includes('Thriller') ? 'tense and immersive' : genres.includes('Drama') || genres.includes('Mystery') ? 'thoughtful and story-driven' : 'engaging and cinematic';
+  const why = `${title} leans into ${genreText.toLowerCase()} storytelling with a ${mood} feel. It is a good fit when you want ${short ? 'a shorter watch' : long ? 'a longer, more immersive watch' : 'a focused movie-night pick'} without choosing from an endless catalogue.`;
+  const fit = `${type === 'series' ? 'This series' : 'This movie'} is best suited to viewers looking for ${mood} entertainment${overview ? ` and a story built around its ${genreText.toLowerCase()} identity` : ''}.`;
+  return <section className="mx-auto max-w-[1180px] px-4 py-10 sm:px-6"><div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-red-400">Cinevero guide</p><h2 className="mt-2 text-2xl font-bold">Why watch {title}?</h2><p className="mt-4 max-w-3xl leading-7 text-zinc-300">{why}</p><div className="mt-6 grid gap-4 sm:grid-cols-2"><div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Best for</p><p className="mt-2 text-sm leading-6 text-zinc-300">{fit}</p></div><div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Cinevero take</p><p className="mt-2 text-sm leading-6 text-zinc-300">{short ? 'A compact pick when time is limited.' : long ? 'Give it time and settle in for a deeper watch.' : 'A balanced choice for a focused movie night.'}</p></div></div></div></section>;
+}
