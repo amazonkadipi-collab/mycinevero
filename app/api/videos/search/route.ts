@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const input = request.nextUrl.searchParams;
-    const query = (input.get('query') || input.get('q') || input.get('category') || '').trim().slice(0, 200);
+    const query = (input.get('query') || input.get('q') || '').trim().slice(0, 200);
     const pageToken = (input.get('pageToken') || '').trim();
     const perPage = Math.min(50, Math.max(1, Number(input.get('per_page') || 50)));
     const order = input.get('order') || 'latest';
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     const { response, body } = await fetchYouTube(url, 12000);
     if (!response.ok) {
       const message = body?.error?.message || `YouTube API returned HTTP ${response.status}`;
-      return NextResponse.json({ error: message, videos: [], total_count: 0, total_pages: 0 }, { status: response.status === 403 ? 502 : 502 });
+      return NextResponse.json({ error: message, videos: [], total_count: 0, total_pages: 0 }, { status: 502 });
     }
 
     const items = Array.isArray(body?.items) ? body.items : [];
