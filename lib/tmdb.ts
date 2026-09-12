@@ -16,6 +16,7 @@ export type TmdbTitle = {
   release_date?: string;
   first_air_date?: string;
   runtime?: number | null;
+  episode_run_time?: number[];
   number_of_seasons?: number;
   number_of_episodes?: number;
   vote_average?: number;
@@ -29,6 +30,7 @@ export type TmdbTitle = {
   credits?: { cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[]; crew?: { id: number; name: string; department?: string; job?: string; profile_path?: string | null }[] };
   recommendations?: { results: TmdbTitle[] };
   videos?: { results: { id: string; key: string; name: string; site: string; type: string; official?: boolean; published_at?: string }[] };
+  watch_providers?: { results?: Record<string, { link?: string; flatrate?: { provider_id: number; provider_name: string; logo_path?: string }[]; rent?: { provider_id: number; provider_name: string; logo_path?: string }[]; buy?: { provider_id: number; provider_name: string; logo_path?: string }[] }> } };
   seasons?: TmdbSeason[];
   external_ids?: { imdb_id?: string | null; tvdb_id?: number | null; wikidata_id?: string | null };
 };
@@ -44,7 +46,7 @@ export async function tmdbPopular(type: TmdbMediaType) { return tmdbFetch<{resul
 export async function tmdbNowPlaying() { return tmdbFetch<{results:TmdbTitle[]}>('/movie/now_playing',{language:'en-US',page:1}); }
 export async function tmdbUpcoming() { return tmdbFetch<{results:TmdbTitle[]}>('/movie/upcoming',{language:'en-US',page:1}); }
 export async function tmdbSearch(query:string,page=1) { return tmdbFetch<{results:TmdbTitle[];total_pages:number;total_results:number}>('/search/multi',{query,include_adult:'false',language:'en-US',page}); }
-export async function tmdbDetails(type:TmdbMediaType,id:number) { return tmdbFetch<TmdbTitle>(`/${type}/${id}`,{language:'en-US',append_to_response:'credits,external_ids,videos,recommendations'},21600); }
+export async function tmdbDetails(type:TmdbMediaType,id:number) { return tmdbFetch<TmdbTitle>(`/${type}/${id}`,{language:'en-US',append_to_response:'credits,external_ids,videos,recommendations,watch/providers'},21600); }
 export async function tmdbGenres(type:TmdbMediaType) { return tmdbFetch<{genres:{id:number;name:string}[]}>(`/genre/${type}/list`,{language:'en-US'},86400); }
 export async function tmdbDiscover(type:TmdbMediaType,page=1,options:{genreId?:number|string;runtimeMax?:number;voteAverageMin?:number;sortBy?:string}|number={}) { const filters=typeof options==='number'?{genreId:options}:{...options}; return tmdbFetch<{results:TmdbTitle[];total_pages:number}>(`/discover/${type}`,{language:'en-US',include_adult:'false',include_video:'false',sort_by:filters.sortBy||'popularity.desc',page,with_genres:filters.genreId,with_runtime_lte:type==='movie'?filters.runtimeMax:undefined,vote_average_gte:filters.voteAverageMin}); }
 export async function tmdbSeason(seriesId:number,seasonNumber:number) { return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`,{language:'en-US'},21600); }
