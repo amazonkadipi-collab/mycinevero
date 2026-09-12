@@ -7,12 +7,22 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://watchmovies4.verce
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: 'Watch Movies 4 – Movies & Series', template: '%s | Watch Movies 4' },
+  title: {
+    default: 'Watch Movies 4 – Movies & Series',
+    template: '%s | Watch Movies 4',
+  },
   description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
   keywords: ['Watch Movies 4', 'movies', 'series', 'TV shows', 'movie catalogue'],
   applicationName: 'Watch Movies 4',
-  alternates: { canonical: '/', languages: { en: '/', 'x-default': '/' } },
-  robots: { index: true, follow: true, 'max-image-preview': 'large' },
+  alternates: {
+    canonical: '/',
+    languages: { en: '/', 'x-default': '/' },
+  },
+  robots: {
+    index: true,
+    follow: true,
+    'max-image-preview': 'large',
+  },
   openGraph: {
     title: 'Watch Movies 4 – Movies & Series',
     description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
@@ -25,7 +35,9 @@ export const metadata: Metadata = {
     title: 'Watch Movies 4 – Movies & Series',
     description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
   },
-  verification: { google: GOOGLE_SITE_VERIFICATION },
+  verification: {
+    google: GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
