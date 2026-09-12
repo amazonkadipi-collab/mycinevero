@@ -8,12 +8,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://watchmovies4.verce
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Watch Movies 4 – Movies & Series',
-    template: '%s | Watch Movies 4',
+    default: 'Cinevero – Movies & TV Series Discovery',
+    template: '%s | Cinevero',
   },
-  description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
-  keywords: ['Watch Movies 4', 'movies', 'series', 'TV shows', 'movie catalogue'],
-  applicationName: 'Watch Movies 4',
+  description: 'Discover movies and TV series with Cinevero: trending titles, popular picks, genres, trailers and detailed movie pages.',
+  applicationName: 'Cinevero',
+  keywords: ['Cinevero', 'movies', 'TV series', 'films', 'movie discovery', 'movie catalogue', 'trailers'],
   alternates: {
     canonical: '/',
     languages: { en: '/', 'x-default': '/' },
@@ -24,16 +24,16 @@ export const metadata: Metadata = {
     'max-image-preview': 'large',
   },
   openGraph: {
-    title: 'Watch Movies 4 – Movies & Series',
-    description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
+    title: 'Cinevero – Movies & TV Series Discovery',
+    description: 'Discover movies and TV series, explore genres, ratings, trailers and related titles.',
     type: 'website',
     url: SITE_URL,
-    siteName: 'Watch Movies 4',
+    siteName: 'Cinevero',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Watch Movies 4 – Movies & Series',
-    description: 'Discover movies and TV series with a fast, clean, responsive catalogue.',
+    title: 'Cinevero – Movies & TV Series Discovery',
+    description: 'Discover movies and TV series, explore genres, ratings, trailers and related titles.',
   },
   verification: {
     google: GOOGLE_SITE_VERIFICATION,
@@ -43,10 +43,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning>
-        {children}
-        <LegalFooter />
-      </body>
+      <body suppressHydrationWarning>{children}<LegalFooter /></body>
     </html>
   );
 }
