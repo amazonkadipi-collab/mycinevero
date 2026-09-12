@@ -139,3 +139,5 @@ export default async function SeriesPage({
     </main>
   );
 }
+
+// Keep this route source formatted and parser-safe for production builds.
