@@ -4,3 +4,18 @@
 html, body { font-family: var(--font-xvideos); background: #09090b; }
 body { margin: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
+
+/* Reference-inspired visual system: charcoal canvas, compact chrome, blue links. */
+.elovex-shell { background: #292c32 !important; color: #eeeeef !important; }
+.elovex-shell header, .elovex-shell footer { background: #292c32 !important; border-color: #3e4249 !important; }
+.elovex-shell main { background: #292c32; }
+.elovex-shell a { color: #4f83ff; }
+.elovex-shell nav a, .elovex-shell footer span, .elovex-shell footer h3, .elovex-shell footer div { color: #c9cbd0; }
+.elovex-shell h1, .elovex-shell h2, .elovex-shell h3, .elovex-shell p { color: #eeeeef; }
+.elovex-shell input { background: #ffffff !important; color: #222328 !important; border-color: #bfc2c8 !important; }
+.elovex-shell button { background: #eeeeef; color: #25272c; }
+.elovex-shell form button { background: #eeeeef; color: #25272c; }
+.elovex-shell section, .elovex-shell [class*="bg-[#fafafa]"], .elovex-shell [class*="bg-white"] { background: transparent !important; border-color: #3e4249 !important; }
+.elovex-shell [class*="bg-[#ededee]"], .elovex-shell [class*="bg-[#e7e7e8]"], .elovex-shell [class*="bg-[#eeeeef]"] { background: #3b3f46 !important; }
+.elovex-shell [class*="border-[#e4e4e6]"], .elovex-shell [class*="border-[#e5e5e7]"], .elovex-shell [class*="border-[#e7e7e8]"], .elovex-shell [class*="border-[#dedee0]"] { border-color: #3e4249 !important; }
+.elovex-shell footer { color: #c9cbd0; }
