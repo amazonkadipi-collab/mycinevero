@@ -17,23 +17,23 @@ export default function AboutPage() {
         </p>
         <h2>What makes Cinevero useful</h2>
         <p>
-          A title page is designed to do more than display a poster and a score. Cinevero adds a concise viewing guide that explains the kind of experience a title is suited to, who may enjoy it, and how it fits a particular movie-night decision. We also provide trailers, basic title details, genres, cast information, and related recommendations to help you make an informed choice.
+          A title page is designed to do more than display a poster and a score. Cinevero adds a viewing-oriented editorial layer that explains the kind of experience a title is suited to, who may enjoy it, and how it fits a particular movie-night decision. We also provide trailers, title details, genres, cast information, and related recommendations to help you make an informed choice.
         </p>
         <h2>How our recommendations work</h2>
         <p>
-          Cinevero combines structured movie and TV metadata with our own presentation and viewing-oriented editorial layer. Recommendations are intended as discovery suggestions, not guarantees that a title will match every viewer's taste. Availability, release information, ratings, and other title data can change over time.
+          Cinevero combines structured catalogue metadata with our own presentation and viewing guidance. Discovery lists can use signals such as popularity, genre, release timing, runtime, and related titles. The editorial guidance is written to help with a viewing decision rather than to reproduce a provider's catalogue description. Recommendations are suggestions, not guarantees that a title will match every viewer's taste.
         </p>
-        <h2>Our approach to content</h2>
+        <h2>How we approach editorial content</h2>
         <p>
-          We aim to provide useful context instead of simply reproducing catalogue information. Our goal is to make each discovery page clearer, easier to navigate, and more helpful for deciding what to watch next.
+          We aim to add useful context instead of publishing pages that only repeat posters, ratings, or database fields. Our guides cover practical questions such as choosing a film by mood, matching a movie to the time available, and deciding between a film and a series. We review the site structure and editorial pages for clarity, usefulness, and consistency as the catalogue changes.
         </p>
         <h2>Third-party data and media</h2>
         <p>
-          Cinevero uses third-party services for selected catalogue metadata, artwork, and trailers. Third-party material remains subject to its respective provider's terms and rights. Cinevero does not claim ownership of third-party movie, TV, poster, cast, or trailer content.
+          Cinevero uses third-party services for selected catalogue metadata, artwork, and trailers. Third-party material remains subject to its respective provider's terms and rights. Cinevero does not claim ownership of third-party movie, TV, poster, cast, or trailer content and does not host movie or TV video files.
         </p>
         <h2>Questions, corrections, or copyright concerns</h2>
         <p>
-          If you need to report an issue, request a correction, or raise a copyright concern, please use our Contact and DMCA pages. We review valid reports and update or remove information when appropriate.
+          If you need to report an issue, request a correction, or raise a copyright concern, please use our Contact and DMCA pages. Include the relevant page URL and enough detail for the issue to be reviewed. Valid reports are handled according to the applicable site policies.
         </p>
       </article>
     </main>
