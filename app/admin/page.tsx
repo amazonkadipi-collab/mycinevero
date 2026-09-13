@@ -1,4 +1,4 @@
-import AdminDashboard from "./AdminDashboard";
+import AdminDashboard from "./AdminDashboardV2";
 
 export const metadata = {
   title: "Admin Dashboard | Cinevero",
