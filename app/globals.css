@@ -15,12 +15,18 @@ button,a { transition:color 160ms ease,background-color 160ms ease,border-color 
 @media (max-width:767px) { .cinevero-native-ad { margin-top:14px; margin-bottom:14px; padding:9px 10px 10px; border-radius:14px; } }
 @media (max-width:380px) { .cinevero-native-ad { padding:8px 9px 9px; border-radius:12px; } }
 
+/* Cast is always presented as circular portraits across title pages. */
+main section:has(h2) img[alt]:not([alt*="poster"])[class*="aspect-"] { width:100%; aspect-ratio:1/1 !important; border-radius:9999px !important; object-fit:cover !important; border:2px solid rgba(255,255,255,.1); box-shadow:0 8px 24px rgba(0,0,0,.18); }
+main section:has(h2) img[alt]:not([alt*="poster"])[class*="aspect-"] + * { }
+main section:has(h2) .aspect-\[3\/4\], main section:has(h2) .aspect-\[2\/3\] { display:flex; align-items:center; justify-content:center; background:transparent !important; aspect-ratio:1/1 !important; }
+main section:has(h2) .aspect-\[3\/4\] img, main section:has(h2) .aspect-\[2\/3\] img { width:100% !important; height:100% !important; border-radius:9999px !important; object-fit:cover !important; }
+
 /* Keep the older route templates on the same dark product shell while they are progressively refreshed. */
 main[class*="bg-[#f7fcff]"], main[class*="bg-[#f5fbff]"], main[class*="bg-white"] { background:#0e0e1d !important; color:#f7f7fb !important; }
 main [class*="bg-white"] { background:#17162a !important; }
-main [class*="border-[#d8edf3]"], main [class*="border-[#d9edf4]"], main [class*="border-[#dce7f2]"], main [class*="border-[#cfe5ed]"] { border-color:rgba(255,255,255,.1) !important; }
+main [class*="border-[#d8edf3]"], main [class*="border-[#d9edf4]"], main [class*="border-[#dce7f2]"], main [class*="border-[#cfe5ed"]] { border-color:rgba(255,255,255,.1) !important; }
 main [class*="text-[#17324d]"], main [class*="text-[#172033]"], main [class*="text-zinc-800"] { color:#f7f7fb !important; }
-main [class*="text-[#5e788c]"], main [class*="text-[#6b8496]"], main [class*="text-[#7891a3]"], main [class*="text-[#667085]"], main [class*="text-zinc-500"], main [class*="text-[#6b879c]"] { color:#9b99ad !important; }
+main [class*="text-[#5e788c]"], main [class*="text-[#6b8496]"], main [class*="text-[#7891a3]"], main [class*="text-[#667085]"], main [class*="text-zinc-500"], main [class*="text-[#6b879c"] { color:#9b99ad !important; }
 main [class*="bg-[#e9faff]"], main [class*="bg-[#edf8fb]"], main [class*="bg-[#eaf8fb]"], main [class*="bg-[#fff0eb]"] { background:#211e3a !important; }
 main [class*="bg-[#168aad]"], main [class*="bg-[#ff6b4a]"] { background:#7751ff !important; }
 main [class*="text-[#168aad]"], main [class*="text-[#ff6b4a]"], main [class*="text-red-600"] { color:#a58cff !important; }
