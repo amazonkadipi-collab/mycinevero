@@ -6,6 +6,7 @@ import VercelAnalyticsScript from '@/components/VercelAnalyticsScript';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const BING_SITE_VERIFICATION = '84783D6C29D7BA1FE3D5503CF8ABF55D';
+const YANDEX_SITE_VERIFICATION = '512bbf7efb34a7ed';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 const ADSENSE_ACCOUNT = 'ca-pub-2298621556332463';
 
@@ -21,7 +22,10 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: 'Cinevero – Movies & TV Series Discovery', description: 'Discover what to watch with Cinevero.' },
   verification: {
     google: GOOGLE_SITE_VERIFICATION,
-    other: { 'msvalidate.01': BING_SITE_VERIFICATION },
+    other: {
+      'msvalidate.01': BING_SITE_VERIFICATION,
+      'yandex-verification': YANDEX_SITE_VERIFICATION,
+    },
   },
 };
 
