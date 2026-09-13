@@ -85,12 +85,13 @@ export async function GET(request: Request) {
       visitors: numberValue(row.visitors),
     }));
 
-    // Keep totals explicit so strict TypeScript never infers optional numeric fields.
-    const totals: { pageviews: number; visitors: number } = { pageviews: 0, visitors: 0 };
-    for (const row of pageRows) {
-      totals.pageviews += numberValue(row.pageviews);
-      totals.visitors += numberValue(row.visitors);
-    }
+    const totals = pageRows.reduce<{ pageviews: number; visitors: number }>(
+      (acc, row) => ({
+        pageviews: acc.pageviews + numberValue(row.pageviews),
+        visitors: acc.visitors + numberValue(row.visitors),
+      }),
+      { pageviews: 0, visitors: 0 },
+    );
 
     return NextResponse.json({ ok: true, range: days, totals, categories: category, topPages: pathStats.slice(0, 100), trend: trendRows, source: "Vercel Web Analytics", note: "Vercel Web Analytics aggregates production traffic; visitor totals in grouped rows can repeat across days." });
   } catch (error) {
