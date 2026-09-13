@@ -1,32 +1,100 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Search, Star, SlidersHorizontal, Sparkles, ArrowLeft, ArrowRight } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import { slugify, tmdbImage, tmdbSearch } from '@/lib/tmdb';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://watchmovies4.vercel.app';
-export const metadata: Metadata = { title: 'Search Movies & TV Series', description: 'Search movies and TV series on Cinevero.', alternates: { canonical: `${SITE_URL}/search` } };
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
+
+export const metadata: Metadata = {
+  title: 'Search Movies & TV Series',
+  description: 'Search movies and TV series on Cinevero.',
+  alternates: { canonical: `${SITE_URL}/search` },
+};
+
+function titleOf(item: any) { return item.title || item.name || item.original_title || item.original_name || 'Untitled'; }
+function yearOf(item: any) { return (item.release_date || item.first_air_date || '').slice(0, 4); }
+function ratingOf(item: any) { return typeof item.vote_average === 'number' && item.vote_average > 0 ? item.vote_average.toFixed(1) : 'N/A'; }
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; type?: string; year?: string; sort?: string }> }) {
   const { q, page: pageParam, type = 'all', year = '', sort = 'relevance' } = await searchParams;
   const query = q?.trim() || '';
-  const requested = Number(pageParam); const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 500) : 1;
+  const requested = Number(pageParam);
+  const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 500) : 1;
   const data = query ? await tmdbSearch(query, page).catch(() => ({ results: [], total_pages: 0, total_results: 0 })) : { results: [], total_pages: 0, total_results: 0 };
+
   let results = data.results.filter((x: any) => x.media_type === 'movie' || x.media_type === 'tv');
   if (type === 'movie' || type === 'tv') results = results.filter((x: any) => x.media_type === type);
   if (/^\d{4}$/.test(year)) results = results.filter((x: any) => (x.release_date || x.first_air_date || '').startsWith(year));
   if (sort === 'rating') results.sort((a: any, b: any) => (b.vote_average || 0) - (a.vote_average || 0));
   if (sort === 'popularity') results.sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0));
   if (sort === 'newest') results.sort((a: any, b: any) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
-  if (sort === 'title') results.sort((a: any, b: any) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
+  if (sort === 'title') results.sort((a: any, b: any) => titleOf(a).localeCompare(titleOf(b)));
+
   const totalPages = Math.min(data.total_pages || 0, 500);
   const pageUrl = (p: number) => `/search?q=${encodeURIComponent(query)}&page=${p}&type=${encodeURIComponent(type)}&year=${encodeURIComponent(year)}&sort=${encodeURIComponent(sort)}`;
-  return <main className="min-h-screen bg-white text-zinc-900"><SiteHeader /><div className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10">
-    <form role="search" action="/search" className="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/10"><label className="sr-only" htmlFor="search-query">Search movies and series</label><input id="search-query" name="q" defaultValue={query} placeholder="Search movies and series" className="min-w-0 flex-1 px-4 py-3 text-sm outline-none"/><button type="submit" aria-label="Search" className="bg-red-600 px-5 text-white hover:bg-red-700">Search</button></form>
-    <div className="mt-8 flex flex-col gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Cinevero search</p><h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{query ? <>Results for “{query}”</> : 'Search movies and series'}</h1>{query && <p className="mt-2 text-sm text-zinc-500">{data.total_results.toLocaleString()} results · Page {page} of {Math.max(totalPages, 1)}</p>}</div>
-      {query && <form method="get" className="grid grid-cols-2 gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:grid-cols-4 lg:flex lg:items-center"><input type="hidden" name="q" value={query}/><label className="sr-only" htmlFor="type">Type</label><select id="type" name="type" defaultValue={type} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"><option value="all">All types</option><option value="movie">Movies</option><option value="tv">Series</option></select><label className="sr-only" htmlFor="year">Year</label><input id="year" name="year" defaultValue={year} inputMode="numeric" pattern="[0-9]{4}" placeholder="Year" className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"/><label className="sr-only" htmlFor="sort">Sort</label><select id="sort" name="sort" defaultValue={sort} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"><option value="relevance">Sort: Relevance</option><option value="popularity">Popularity</option><option value="rating">Rating</option><option value="newest">Newest</option><option value="title">A–Z</option></select><button className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800">Apply filters</button></form>}
-    </div>
-    {!query ? <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 px-6 py-14 text-center"><h2 className="text-lg font-semibold">Start with a title, actor or series</h2><p className="mt-2 text-sm text-zinc-500">Use the search field above to explore Cinevero.</p></div> : results.length === 0 ? <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 px-6 py-14 text-center"><h2 className="text-lg font-semibold">No matching titles</h2><p className="mt-2 text-sm text-zinc-500">Try another title or loosen your filters.</p></div> : <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">{results.map((item: any) => { const tv = item.media_type === 'tv'; const title = item.title || item.name || 'Untitled'; const itemYear = (item.release_date || item.first_air_date || '').slice(0,4); const rating = typeof item.vote_average === 'number' && item.vote_average > 0 ? item.vote_average.toFixed(1) : 'N/A'; return <Link key={`${item.media_type}-${item.id}`} href={`/${tv ? 'series' : 'movie'}/${slugify(title)}-${item.id}`} className="group min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"><article><div className="aspect-[2/3] overflow-hidden rounded-xl bg-zinc-100">{item.poster_path ? <img src={tmdbImage(item.poster_path,'w342')} alt={`${title} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"/> : <div className="flex h-full items-center justify-center text-xs text-zinc-400">No poster</div>}</div><div className="mt-2"><div className="flex items-center gap-2 text-[11px] font-semibold"><span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-600">{tv ? 'Series' : 'Movie'}</span><span className="text-zinc-500">{itemYear || '—'}</span></div><h2 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold group-hover:text-red-600">{title}</h2><span className="mt-1 inline-flex items-center gap-1 text-xs text-zinc-500"><Star size={11} fill="currentColor" aria-hidden="true"/>{rating === 'N/A' ? 'Not rated' : `${rating}/10`}</span></div></article></Link>})}</div>}
-    {query && totalPages > 1 && <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Search pagination"><Link href={page > 1 ? pageUrl(page - 1) : pageUrl(1)} aria-disabled={page <= 1} className={`rounded-lg border px-4 py-2 text-sm font-medium ${page <= 1 ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}>Previous</Link><span className="px-3 text-sm text-zinc-500">Page {page} of {totalPages}</span><Link href={page < totalPages ? pageUrl(page + 1) : pageUrl(totalPages)} aria-disabled={page >= totalPages} className={`rounded-lg border px-4 py-2 text-sm font-medium ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}>Next</Link></nav>}
-  </div></main>;
+
+  return <div className="min-h-screen text-slate-900">
+    <SiteHeader />
+    <main className="mx-auto max-w-[1240px] px-3 pb-12 sm:px-5">
+      <section className="relative mt-3 overflow-hidden rounded-[22px] bg-slate-950 text-white shadow-[0_12px_34px_rgba(23,32,51,0.12)] sm:mt-4">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(22,138,173,0.42),transparent_38%),radial-gradient(circle_at_15%_90%,rgba(255,107,74,0.26),transparent_34%)]" />
+        <div className="relative p-5 sm:p-7">
+          <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-orange-300"><Sparkles size={12} aria-hidden="true" /> CINEVERO · SEARCH</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{query ? <>Results for “{query}”</> : 'Find a movie or series'}</h1>
+          <p className="mt-2 max-w-2xl text-[13px] leading-5 text-slate-300">Search titles, then explore details, ratings, trailers and recommendations in Cinevero.</p>
+          <form role="search" action="/search" className="mt-4 flex max-w-2xl overflow-hidden rounded-2xl border border-white/15 bg-white/10 backdrop-blur focus-within:border-cyan-300 focus-within:ring-2 focus-within:ring-cyan-300/10">
+            <label className="sr-only" htmlFor="search-query">Search movies and series</label>
+            <input id="search-query" name="q" defaultValue={query} placeholder="Search movies & series" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400" />
+            <button type="submit" aria-label="Search" className="inline-flex items-center gap-2 bg-orange-500 px-4 text-xs font-black text-white hover:bg-orange-600"><Search size={15} /> Search</button>
+          </form>
+          {query && <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-300"><span className="rounded-full bg-white/10 px-2.5 py-1.5">{data.total_results.toLocaleString()} results</span><span>Page {page} of {Math.max(totalPages, 1)}</span></div>}
+        </div>
+      </section>
+
+      {!query ? <section className="mt-5 rounded-[18px] border border-sky-100 bg-white p-7 text-center shadow-[0_3px_14px_rgba(23,32,51,0.045)] sm:p-10">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600"><Search size={22} /></div>
+        <h2 className="mt-3 text-lg font-black text-slate-800">Start with a title, actor or series</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Use the search field above to explore the Cinevero catalog.</p>
+        <Link href="/discover" className="mt-4 inline-flex rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-black text-white hover:bg-orange-600">✨ Discover for me</Link>
+      </section> : <>
+        <form method="get" className="mt-4 flex flex-col gap-2 rounded-[18px] border border-sky-100 bg-white p-3 shadow-[0_3px_14px_rgba(23,32,51,0.045)] sm:flex-row sm:flex-wrap sm:items-center">
+          <input type="hidden" name="q" value={query} />
+          <div className="flex items-center gap-1.5 px-1 text-[11px] font-black text-cyan-700"><SlidersHorizontal size={14} /> Filters</div>
+          <label className="sr-only" htmlFor="type">Type</label>
+          <select id="type" name="type" defaultValue={type} className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-300"><option value="all">All types</option><option value="movie">Movies</option><option value="tv">Series</option></select>
+          <label className="sr-only" htmlFor="year">Year</label>
+          <input id="year" name="year" defaultValue={year} inputMode="numeric" pattern="[0-9]{4}" placeholder="Year" className="w-full rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-300 sm:w-24" />
+          <label className="sr-only" htmlFor="sort">Sort</label>
+          <select id="sort" name="sort" defaultValue={sort} className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-300"><option value="relevance">Relevance</option><option value="popularity">Popularity</option><option value="rating">Rating</option><option value="newest">Newest</option><option value="title">A–Z</option></select>
+          <button className="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-black text-white hover:bg-cyan-700">Apply filters</button>
+        </form>
+
+        {results.length === 0 ? <div className="mt-5 rounded-[18px] border border-dashed border-sky-200 bg-white px-6 py-14 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-coral-50 bg-[#fff0eb] text-[#ff6b4a]"><Search size={20} /></div><h2 className="mt-3 text-lg font-black">No matching titles</h2><p className="mt-2 text-sm text-slate-500">Try another title or loosen your filters.</p></div> : <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:grid-cols-7">
+          {results.map((item: any) => {
+            const tv = item.media_type === 'tv';
+            const title = titleOf(item);
+            const itemYear = yearOf(item);
+            const rating = ratingOf(item);
+            return <Link key={`${item.media_type}-${item.id}`} href={`/${tv ? 'series' : 'movie'}/${slugify(title)}-${item.id}`} className="group block min-w-0 rounded-[18px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400">
+              <article className="overflow-hidden rounded-[18px] border border-sky-100/90 bg-white shadow-[0_3px_14px_rgba(23,32,51,0.055)] transition duration-200 group-hover:-translate-y-1 group-hover:border-cyan-200 group-hover:shadow-[0_12px_26px_rgba(22,138,173,0.14)]">
+                <div className="relative aspect-[2/3] overflow-hidden bg-sky-50">
+                  {item.poster_path ? <img src={tmdbImage(item.poster_path, 'w342')} alt={`${title} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]" /> : <div className="flex h-full items-center justify-center text-xs text-slate-400">No poster</div>}
+                  <span className="absolute left-1.5 top-1.5 rounded-full border border-white/70 bg-white/90 px-1.5 py-1 text-[9px] font-black text-cyan-700 shadow-sm backdrop-blur">{tv ? 'SERIES' : 'MOVIE'}</span>
+                  <span className="absolute right-1.5 top-1.5 rounded-full bg-slate-950/75 px-1.5 py-1 text-[9px] font-black text-white shadow-sm backdrop-blur">{rating === 'N/A' ? 'NEW' : `★ ${rating}`}</span>
+                </div>
+                <div className="px-2.5 py-2"><div className="mb-1 flex items-center gap-1.5 text-[9px] font-bold text-slate-400">{itemYear && <span>{itemYear}</span>}<span className="h-0.5 w-0.5 rounded-full bg-slate-300" /><span className="text-cyan-600">{tv ? 'Series' : 'Movie'}</span></div><h2 className="line-clamp-2 min-h-8 text-[12px] font-extrabold leading-[1.05rem] text-slate-800 group-hover:text-cyan-700">{title}</h2><span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-slate-400"><Star size={10} fill="currentColor" />{rating === 'N/A' ? 'Not rated' : `${rating}/10`}</span></div>
+              </article>
+            </Link>;
+          })}
+        </div>}
+
+        {totalPages > 1 && <nav className="mt-7 flex items-center justify-center gap-2" aria-label="Search pagination">
+          <Link href={page > 1 ? pageUrl(page - 1) : pageUrl(1)} aria-disabled={page <= 1} className={`inline-flex items-center gap-1.5 rounded-xl border border-sky-100 bg-white px-3.5 py-2 text-xs font-black ${page <= 1 ? 'pointer-events-none opacity-40' : 'text-slate-600 hover:border-cyan-300 hover:text-cyan-700'}`}><ArrowLeft size={13} /> Previous</Link>
+          <span className="rounded-xl bg-cyan-50 px-3.5 py-2 text-xs font-black text-cyan-700">{page} / {totalPages}</span>
+          <Link href={page < totalPages ? pageUrl(page + 1) : pageUrl(totalPages)} aria-disabled={page >= totalPages} className={`inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-black text-white ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:bg-orange-600'}`}>Next <ArrowRight size={13} /></Link>
+        </nav>}
+      </>}
+    </main>
+  </div>;
 }
