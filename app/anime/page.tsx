@@ -1,53 +1,139 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { tmdbDiscover, tmdbImage, slugify } from '@/lib/tmdb';
+import { Star, SlidersHorizontal } from 'lucide-react';
+import { slugify, tmdbDiscover, tmdbImage } from '@/lib/tmdb';
 
-export const metadata: Metadata = {
-  title: 'Anime – Cinevero | Anime Movies & Series',
-  description: 'Discover anime movies and series on Cinevero.',
-  alternates: { canonical: 'https://cinevero.vercel.app/anime' },
-};
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
+export const dynamic = 'force-dynamic';
 
-function titleOf(item: any) { return item.title || item.name || item.original_title || item.original_name || 'Untitled'; }
-function dateOf(item: any) { return item.release_date || item.first_air_date || ''; }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
+  const { page: pageParam } = await searchParams;
+  const requested = Number(pageParam);
+  const page = Number.isFinite(requested) && requested > 1 ? Math.min(Math.floor(requested), 500) : 1;
 
-export default async function AnimePage() {
-  const [movies, series] = await Promise.all([
-    tmdbDiscover('movie', 1, { genreId: 16, sortBy: 'popularity.desc' }),
-    tmdbDiscover('tv', 1, { genreId: 16, sortBy: 'popularity.desc' }),
+  return {
+    title: page > 1 ? `Anime – Page ${page}` : 'Anime',
+    description: 'Browse anime movies and series on Cinevero.',
+    alternates: { canonical: page > 1 ? `${SITE_URL}/anime?page=${page}` : `${SITE_URL}/anime` },
+  };
+}
+
+function titleOf(item: any) {
+  return item.title || item.name || item.original_title || item.original_name || 'Untitled';
+}
+
+function dateOf(item: any) {
+  return item.release_date || item.first_air_date || '';
+}
+
+function isAnime(item: any) {
+  return item.original_language === 'ja' || item.original_language === 'zh' || item.original_language === 'ko';
+}
+
+export default async function AnimePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page: pageParam } = await searchParams;
+  const requested = Number(pageParam);
+  const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 500) : 1;
+
+  const [movieData, seriesData] = await Promise.all([
+    tmdbDiscover('movie', page, { genreId: 16, sortBy: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0 })),
+    tmdbDiscover('tv', page, { genreId: 16, sortBy: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0 })),
   ]);
 
-  const items = [...movies.results, ...series.results]
-    .filter(item => item.original_language === 'ja' || item.original_language === 'zh' || item.original_language === 'ko')
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-    .slice(0, 30);
+  const items = [...movieData.results, ...seriesData.results]
+    .filter(isAnime)
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+  const totalPages = Math.min(Math.max(movieData.total_pages || 0, seriesData.total_pages || 0), 500);
 
   return (
-    <main className="min-h-screen bg-[#f5fbff] text-[#172033]">
-      <section className="mx-auto max-w-[1180px] px-3 pb-4 pt-5 sm:px-5 sm:pt-7">
-        <div className="rounded-[24px] border border-[#dcecf3] bg-gradient-to-br from-[#dff6ff] via-white to-[#fff0eb] px-5 py-6 shadow-[0_12px_35px_rgba(22,138,173,0.08)] sm:px-7">
-          <div className="inline-flex rounded-full bg-white/80 px-3 py-1 text-[11px] font-black text-[#168aad]">🍥 Cinevero Anime</div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Anime movies & series</h1>
-          <p className="mt-1 max-w-2xl text-sm font-medium text-[#667085]">Discover popular animated stories and find your next anime to watch.</p>
+    <main className="min-h-screen bg-white text-zinc-900">
+      <div className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Cinevero catalogue</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Anime</h1>
+            <p className="mt-2 text-zinc-500">Browse anime movies and series and discover your next story.</p>
+          </div>
+          <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">
+            Page {page} of {Math.max(totalPages, 1)}
+          </span>
         </div>
-      </section>
 
-      <section className="mx-auto max-w-[1180px] px-3 pb-12 sm:px-5">
-        <div className="mb-3 flex items-end justify-between gap-3"><div><h2 className="text-lg font-black">Popular anime</h2><p className="text-xs font-semibold text-[#7a91a1]">Movies and series ranked by popularity</p></div></div>
-        {items.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-          {items.map(item => {
-            const isTv = !!item.name || !!item.first_air_date;
-            const title = titleOf(item);
-            const href = `/${isTv ? 'series' : 'movie'}/${slugify(title)}-${item.id}`;
-            return <Link key={`${isTv ? 'tv' : 'movie'}-${item.id}`} href={href} className="group overflow-hidden rounded-2xl border border-[#dce7f2] bg-white shadow-[0_6px_20px_rgba(23,32,51,0.05)] hover:-translate-y-0.5 hover:border-[#ffb6a6] hover:shadow-[0_10px_25px_rgba(255,107,74,0.12)]">
-              <div className="relative aspect-[2/3] overflow-hidden bg-[#e9faff]">{item.poster_path ? <img src={tmdbImage(item.poster_path, 'w342')} alt={title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" loading="lazy" /> : <div className="flex h-full items-center justify-center p-3 text-center text-xs font-bold text-[#6b879c]">{title}</div>}
-                {item.vote_average ? <span className="absolute right-1.5 top-1.5 rounded-full bg-[#102d43]/90 px-2 py-1 text-[10px] font-black text-white">★ {item.vote_average.toFixed(1)}</span> : null}
-              </div>
-              <div className="p-2.5"><h3 className="line-clamp-2 text-xs font-black leading-4">{title}</h3><p className="mt-1 text-[10px] font-bold text-[#7a91a1]">{dateOf(item)?.slice(0,4) || '—'} · {isTv ? 'Series' : 'Movie'}</p></div>
-            </Link>;
-          })}
-        </div> : <div className="rounded-2xl border border-[#dce7f2] bg-white p-8 text-center text-sm font-bold text-[#667085]">No anime titles available right now.</div>}
-      </section>
+        <div className="mt-7 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <SlidersHorizontal size={16} className="text-zinc-500" aria-hidden="true" />
+          <span className="text-xs font-semibold text-zinc-600">Sort: Popularity</span>
+          <Link href="/movie" className="ml-auto rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold hover:border-red-400 hover:text-red-600">Browse movies</Link>
+          <Link href="/series" className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold hover:border-red-400 hover:text-red-600">Browse series</Link>
+        </div>
+
+        {items.length === 0 ? (
+          <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 px-6 py-14 text-center text-sm text-zinc-500">
+            No anime titles are available on this page. Please try another page.
+          </div>
+        ) : (
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">
+            {items.map((item: any) => {
+              const isTv = !!item.name || !!item.first_air_date;
+              const title = titleOf(item);
+              const year = dateOf(item).slice(0, 4);
+              const rating = typeof item.vote_average === 'number' && item.vote_average > 0 ? item.vote_average.toFixed(1) : 'N/A';
+              const href = `/${isTv ? 'series' : 'movie'}/${slugify(title)}-${item.id}`;
+
+              return (
+                <Link key={`${isTv ? 'tv' : 'movie'}-${item.id}`} href={href} className="group min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+                  <article>
+                    <div className="aspect-[2/3] overflow-hidden rounded-xl bg-zinc-100">
+                      {item.poster_path ? (
+                        <img
+                          src={tmdbImage(item.poster_path, 'w342')}
+                          alt={`${title} poster`}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center p-3 text-center text-xs text-zinc-400">No poster</div>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 text-[11px] font-semibold">
+                        <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-600">{isTv ? 'Series' : 'Movie'}</span>
+                        <span className="text-zinc-500">{year || '—'}</span>
+                      </div>
+                      <h2 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold group-hover:text-red-600">{title}</h2>
+                      <span className="mt-1 inline-flex items-center gap-1 text-xs text-zinc-500">
+                        <Star size={11} fill="currentColor" aria-hidden="true" />
+                        {rating === 'N/A' ? 'Not rated' : `${rating}/10`}
+                      </span>
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Anime pagination">
+            <Link
+              href={page > 1 ? `/anime?page=${page - 1}` : '/anime'}
+              aria-disabled={page <= 1}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium ${page <= 1 ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}
+            >
+              Previous
+            </Link>
+            <span className="px-3 text-sm text-zinc-500">Page {page} of {totalPages}</span>
+            <Link
+              href={page < totalPages ? `/anime?page=${page + 1}` : `/anime?page=${totalPages}`}
+              aria-disabled={page >= totalPages}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}
+            >
+              Next
+            </Link>
+          </nav>
+        )}
+      </div>
     </main>
   );
 }
