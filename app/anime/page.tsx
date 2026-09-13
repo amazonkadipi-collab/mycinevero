@@ -42,7 +42,8 @@ export default async function AnimePage({ searchParams }: { searchParams: Promis
 
   const items = [...movieData.results, ...seriesData.results]
     .filter(isAnime)
-    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+    .slice(0, 12);
 
   const totalPages = Math.min(Math.max(movieData.total_pages || 0, seriesData.total_pages || 0), 500);
 
