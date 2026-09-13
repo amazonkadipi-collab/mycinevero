@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Star, Clock, ExternalLink, Play, Heart, Sparkles } from 'lucide-react';
 import { slugify, tmdbDetails, tmdbImage } from '@/lib/tmdb';
-import SiteHeader from '@/components/SiteHeader';
 import CineveroInsight from '@/components/CineveroInsight';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
@@ -34,7 +33,6 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
   return <main className="min-h-screen bg-[#f7fcff] text-[#17324d]">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-    <SiteHeader />
     <div className="mx-auto max-w-[1180px] px-4 pt-3 sm:px-6"><nav aria-label="Breadcrumb" className="text-[11px] font-semibold text-[#6b879c]"><Link href="/" className="hover:text-[#168aad]">Home</Link><span className="mx-2">›</span><Link href="/movie" className="hover:text-[#168aad]">Movies</Link><span className="mx-2">›</span><span className="text-[#8aa0b1]">{title}</span></nav></div>
 
     <section className="relative mx-auto mt-2 max-w-[1180px] overflow-hidden rounded-[22px] border border-[#d9edf4] bg-[#102d43] shadow-[0_12px_35px_rgba(22,138,173,0.12)]">
