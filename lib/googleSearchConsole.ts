@@ -1,15 +1,20 @@
 import "server-only";
 
-import { GoogleAuth } from "google-auth-library";
+import { createSign } from "node:crypto";
 
 const SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters";
 const SEARCH_CONSOLE_ENDPOINT =
   "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect";
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
+}
+
+function base64Url(value: string) {
+  return Buffer.from(value).toString("base64url");
 }
 
 function getSiteUrl() {
@@ -30,25 +35,49 @@ async function getAccessToken() {
     /\\n/g,
     "\n",
   );
+  const now = Math.floor(Date.now() / 1000);
 
-  const auth = new GoogleAuth({
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
-    scopes: [SEARCH_CONSOLE_SCOPE],
+  const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claim = base64Url(
+    JSON.stringify({
+      iss: clientEmail,
+      scope: SEARCH_CONSOLE_SCOPE,
+      aud: GOOGLE_TOKEN_ENDPOINT,
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+  const unsigned = `${header}.${claim}`;
+
+  const signer = createSign("RSA-SHA256");
+  signer.update(unsigned);
+  signer.end();
+  const signature = signer.sign(privateKey, "base64url");
+
+  const response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: `${unsigned}.${signature}`,
+    }),
+    cache: "no-store",
   });
 
-  const token = await auth.getAccessToken();
-  if (!token) throw new Error("Google authentication did not return an access token");
-  return token;
+  const payload = await response.json();
+  if (!response.ok || !payload?.access_token) {
+    throw new Error(payload?.error_description || payload?.error || "Google authentication failed");
+  }
+
+  return payload.access_token as string;
 }
 
 export async function inspectSearchConsoleUrl(url: string) {
   const siteUrl = getSiteUrl();
   const normalized = new URL(url).toString();
+  const propertyRoot = siteUrl.replace(/\/$/, "");
 
-  if (!normalized.startsWith(siteUrl.replace(/\/$/, "") + "/") && normalized !== siteUrl) {
+  if (!normalized.startsWith(`${propertyRoot}/`) && normalized !== siteUrl) {
     throw new Error(`URL must belong to the configured Search Console property: ${siteUrl}`);
   }
 
