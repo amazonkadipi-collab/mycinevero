@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import AdminDashboard from "./AdminDashboard";
 
 export const metadata = {
   title: "Admin Dashboard | Cinevero",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function AdminPage() {
-  redirect("/admin/indexing");
+  return <AdminDashboard />;
 }
