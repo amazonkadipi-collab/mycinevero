@@ -15,7 +15,7 @@ type AnalyticsRow = {
   [key: string]: unknown;
 };
 
-function numberValue(value: unknown) {
+function numberValue(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : Number(value || 0);
 }
 
@@ -85,6 +85,7 @@ export async function GET(request: Request) {
       visitors: numberValue(row.visitors),
     }));
 
+    // Keep totals explicit so strict TypeScript never infers optional numeric fields.
     const totals: { pageviews: number; visitors: number } = { pageviews: 0, visitors: 0 };
     for (const row of pageRows) {
       totals.pageviews += numberValue(row.pageviews);
