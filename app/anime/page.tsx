@@ -34,18 +34,23 @@ export default async function AnimePage({ searchParams }: { searchParams: Promis
   const { page: pageParam } = await searchParams;
   const requested = Number(pageParam);
   const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 500) : 1;
+  const nextSourcePage = Math.min(page + 1, 500);
 
-  const [movieData, seriesData] = await Promise.all([
+  // Fetch two TMDB pages per type so the language filter cannot leave the grid with only 8–10 cards.
+  const [moviePage1, moviePage2, seriesPage1, seriesPage2] = await Promise.all([
     tmdbDiscover('movie', page, { genreId: 16, sortBy: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0 })),
+    tmdbDiscover('movie', nextSourcePage, { genreId: 16, sortBy: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0 })),
     tmdbDiscover('tv', page, { genreId: 16, sortBy: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0 })),
+    tmdbDiscover('tv', nextSourcePage, { genreId: 16, sortBy: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0 })),
   ]);
 
-  const items = [...movieData.results, ...seriesData.results]
+  const items = [...moviePage1.results, ...moviePage2.results, ...seriesPage1.results, ...seriesPage2.results]
     .filter(isAnime)
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+    .filter((item, index, all) => all.findIndex(other => other.id === item.id && (!!other.name === !!item.name)) === index)
     .slice(0, 12);
 
-  const totalPages = Math.min(Math.max(movieData.total_pages || 0, seriesData.total_pages || 0), 500);
+  const totalPages = Math.min(Math.max(moviePage1.total_pages || 0, seriesPage1.total_pages || 0), 500);
 
   return (
     <main className="min-h-screen bg-white text-zinc-900">
