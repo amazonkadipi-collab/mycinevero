@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import LegalFooter from '@/components/LegalFooter';
+import SiteHeader from '@/components/SiteHeader';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
@@ -19,5 +20,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body suppressHydrationWarning>{children}<LegalFooter /></body></html>;
+  return <html lang="en"><body suppressHydrationWarning><SiteHeader />{children}<LegalFooter /></body></html>;
 }
