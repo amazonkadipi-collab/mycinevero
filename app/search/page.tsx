@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Search, Star, SlidersHorizontal, Sparkles, ArrowLeft, ArrowRight } from 'lucide-react';
-import SiteHeader from '@/components/SiteHeader';
 import { slugify, tmdbImage, tmdbSearch } from '@/lib/tmdb';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
@@ -35,7 +34,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const pageUrl = (p: number) => `/search?q=${encodeURIComponent(query)}&page=${p}&type=${encodeURIComponent(type)}&year=${encodeURIComponent(year)}&sort=${encodeURIComponent(sort)}`;
 
   return <div className="min-h-screen text-slate-900">
-    <SiteHeader />
     <main className="mx-auto max-w-[1240px] px-3 pb-12 sm:px-5">
       <section className="relative mt-3 overflow-hidden rounded-[22px] bg-slate-950 text-white shadow-[0_12px_34px_rgba(23,32,51,0.12)] sm:mt-4">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(22,138,173,0.42),transparent_38%),radial-gradient(circle_at_15%_90%,rgba(255,107,74,0.26),transparent_34%)]" />
