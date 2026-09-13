@@ -10,6 +10,7 @@ const links = [
   { href: '/discover', label: 'Discover' },
   { href: '/movie', label: 'Movies' },
   { href: '/series', label: 'Series' },
+  { href: '/anime', label: 'Anime' },
   { href: '/genres', label: 'Genres' },
 ];
 
