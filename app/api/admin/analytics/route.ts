@@ -25,11 +25,7 @@ async function queryVercel(path: string, params: Record<string, string>) {
 
   const url = new URL(`${API_BASE}/${path}`);
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
   const text = await response.text();
   let data: any = {};
   try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
@@ -62,8 +58,7 @@ export async function GET(request: Request) {
     const projectId = process.env.VERCEL_PROJECT_ID || DEFAULT_PROJECT;
     const common = { teamId, projectId, from: from.toISOString(), to: to.toISOString(), filter: "environment eq 'production'" };
 
-    const [overview, pages, trend] = await Promise.all([
-      queryVercel("visits/aggregate", { ...common, by: "requestPath", limit: "500" }),
+    const [pages, trend] = await Promise.all([
       queryVercel("visits/aggregate", { ...common, by: "requestPath", limit: "500" }),
       queryVercel("visits/aggregate", { ...common, by: "day", limit: "100" }),
     ]);
@@ -90,22 +85,13 @@ export async function GET(request: Request) {
       visitors: numberValue(row.visitors),
     }));
 
-    const totals = pageRows.reduce((acc, row) => {
-      acc.pageviews += numberValue(row.pageviews);
-      acc.visitors += numberValue(row.visitors);
-      return acc;
-    }, { pageviews: 0, visitors: 0 });
+    const totals: { pageviews: number; visitors: number } = { pageviews: 0, visitors: 0 };
+    for (const row of pageRows) {
+      totals.pageviews += numberValue(row.pageviews);
+      totals.visitors += numberValue(row.visitors);
+    }
 
-    return NextResponse.json({
-      ok: true,
-      range: days,
-      totals,
-      categories: category,
-      topPages: pathStats.slice(0, 100),
-      trend: trendRows,
-      source: "Vercel Web Analytics",
-      note: "Vercel Web Analytics aggregates production traffic; visitor totals in grouped rows can repeat across days.",
-    });
+    return NextResponse.json({ ok: true, range: days, totals, categories: category, topPages: pathStats.slice(0, 100), trend: trendRows, source: "Vercel Web Analytics", note: "Vercel Web Analytics aggregates production traffic; visitor totals in grouped rows can repeat across days." });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Analytics unavailable" }, { status: 503 });
   }
