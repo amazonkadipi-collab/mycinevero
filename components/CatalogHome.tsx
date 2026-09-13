@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Star, ArrowRight, Sparkles } from 'lucide-react';
 import type { TmdbTitle } from '@/lib/tmdb';
 import { tmdbImage } from '@/lib/tmdb';
-import SiteHeader from '@/components/SiteHeader';
 
 type Props = { trending: TmdbTitle[]; popularMovies: TmdbTitle[]; popularSeries: TmdbTitle[]; latestMovies: TmdbTitle[]; upcoming: TmdbTitle[] };
 const genreLinks = [['action','Action'],['comedy','Comedy'],['crime','Crime'],['drama','Drama'],['horror','Horror'],['mystery','Mystery'],['romance','Romance'],['science-fiction','Sci-Fi'],['thriller','Thriller']];
@@ -30,7 +29,7 @@ export default function CatalogHome({ trending, popularMovies, popularSeries, la
   const featured = trending[0] || popularMovies[0];
   const featuredType = featured?.media_type === 'tv' || featured?.name ? 'series' : 'movie';
   const featuredSlug = featured ? `${titleOf(featured).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-${featured.id}` : '';
-  return <div className="min-h-screen text-slate-900"><SiteHeader /><main className="mx-auto max-w-[1240px] px-3 sm:px-5">
+  return <div className="min-h-screen text-slate-900"><main className="mx-auto max-w-[1240px] px-3 sm:px-5">
     <section className="relative mt-3 min-h-[330px] overflow-hidden rounded-[22px] bg-slate-950 text-white shadow-[0_12px_34px_rgba(23,32,51,0.14)] sm:mt-4 sm:min-h-[350px]">
       {featured?.backdrop_path && <img src={tmdbImage(featured.backdrop_path,'original')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-60" />}
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-slate-950/25" />
