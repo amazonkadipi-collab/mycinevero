@@ -11,6 +11,7 @@ export default function LegalFooter() {
           </div>
           <nav aria-label="Cinevero information and legal links" className="flex flex-wrap gap-x-4 gap-y-2">
             <Link href="/about" className="hover:text-white">About</Link>
+            <Link href="/guides" className="hover:text-white">Guides</Link>
             <Link href="/faq" className="hover:text-white">FAQ</Link>
             <Link href="/privacy-policy" className="hover:text-white">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white">Terms</Link>
