@@ -8,12 +8,12 @@ const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const urls = Array.from(
+    const urls: string[] = Array.from(
       new Set(
         (Array.isArray(body?.urls) ? body.urls : [])
           .filter((url: unknown): url is string => typeof url === "string")
-          .map((url) => url.trim())
-          .filter((url) => url.startsWith(SITE_URL.replace(/\/$/, "") + "/"))
+          .map((url: string) => url.trim())
+          .filter((url: string) => url.startsWith(SITE_URL.replace(/\/$/, "") + "/"))
           .slice(0, 10000),
       ),
     );
