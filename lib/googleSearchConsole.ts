@@ -1,5 +1,3 @@
-import "server-only";
-
 import { createSign } from "node:crypto";
 
 const SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters";
