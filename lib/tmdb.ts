@@ -60,6 +60,11 @@ export async function tmdbTrending(type: TmdbMediaType | 'all' = 'all', window: 
 export async function tmdbPopular(type: TmdbMediaType) { return tmdbTwoPages(`/${type}/popular`,{language:'en-US'}); }
 export async function tmdbNowPlaying() { return tmdbTwoPages('/movie/now_playing',{language:'en-US'}); }
 export async function tmdbUpcoming() { return tmdbTwoPages('/movie/upcoming',{language:'en-US'}); }
+export async function tmdbAnime(type: TmdbMediaType = 'tv', page = 1) { return tmdbFetch<{results: TmdbTitle[]; total_pages: number}>(`/discover/${type}`,{language:'en-US',include_adult:'false',include_video:'false',sort_by:'popularity.desc',page,with_genres:16,with_original_language:'ja'}); }
+export async function tmdbAnimeHome() {
+  const [tv, movie] = await Promise.all([tmdbAnime('tv', 1), tmdbAnime('movie', 1)]);
+  return { results: [...tv.results.map(x => ({...x, media_type:'tv' as const})), ...movie.results.map(x => ({...x, media_type:'movie' as const}))].sort((a,b)=>(b.popularity||0)-(a.popularity||0)).slice(0,12) };
+}
 export async function tmdbSearch(query:string,page=1) { return tmdbFetch<{results:TmdbTitle[];total_pages:number;total_results:number}>('/search/multi',{query,include_adult:'false',language:'en-US',page}); }
 export async function tmdbDetails(type:TmdbMediaType,id:number) { return tmdbFetch<TmdbTitle>(`/${type}/${id}`,{language:'en-US',append_to_response:'credits,external_ids,videos,recommendations,watch/providers'},21600); }
 export async function tmdbGenres(type:TmdbMediaType) { return tmdbFetch<{genres:{id:number;name:string}[]}>(`/genre/${type}/list`,{language:'en-US'},86400); }
