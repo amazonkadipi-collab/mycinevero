@@ -1,31 +1,44 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-const ADSENSE_ACCOUNT = 'ca-pub-2298621556332463';
-const AD_SLOT = '9179461333';
+const NATIVE_SRC = 'https://pl31325870.profitableratecpmnetwork.com/03019123fc56ad60d24677c8faf7c4a1/invoke.js';
+const NATIVE_CONTAINER_ID = 'container-03019123fc56ad60d24677c8faf7c4a1';
 
 export default function AdSenseUnit() {
+  const mounted = useRef(false);
+
   useEffect(() => {
-    try {
-      ((window as typeof window & { adsbygoogle?: unknown[] }).adsbygoogle ||= []).push({});
-    } catch {
-      // AdSense can be unavailable during development or blocked by an extension.
-    }
+    if (mounted.current) return;
+    mounted.current = true;
+
+    const container = document.getElementById(NATIVE_CONTAINER_ID);
+    if (!container) return;
+
+    const existing = document.querySelector(`script[src="${NATIVE_SRC}"]`);
+    if (existing) return;
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.setAttribute('data-cfasync', 'false');
+    script.src = NATIVE_SRC;
+    container.parentElement?.insertBefore(script, container);
+
+    return () => {
+      script.remove();
+    };
   }, []);
 
   return (
-    <section aria-label="Advertisement" className="my-7 w-full overflow-hidden px-0 sm:my-9">
-      <div className="mx-auto min-h-[100px] w-full max-w-[980px] overflow-hidden rounded-xl bg-transparent">
-        <ins
-          className="adsbygoogle"
-          style={{ display: 'block', width: '100%' }}
-          data-ad-client={ADSENSE_ACCOUNT}
-          data-ad-slot={AD_SLOT}
-          data-ad-format="auto"
-          data-full-width-responsive="true"
-        />
-      </div>
+    <section
+      aria-label="Advertisement"
+      className="cinevero-native-ad my-6 w-full overflow-hidden px-0 sm:my-8"
+    >
+      <div className="cinevero-native-ad__label">Advertisement</div>
+      <div
+        id={NATIVE_CONTAINER_ID}
+        className="cinevero-native-ad__widget"
+      />
     </section>
   );
 }
