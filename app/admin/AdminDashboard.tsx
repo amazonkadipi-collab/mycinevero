@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Film, ListFilter, Menu, Radio, RefreshCw, Search, Send, Tv, WandSparkles, X } from "lucide-react";
+import { BarChart3, Film, Globe2, ListFilter, Menu, Radio, RefreshCw, Search, Send, Tv, WandSparkles, X } from "lucide-react";
 
 const SITE_URL = "https://cinevero.vercel.app";
 
@@ -11,12 +11,28 @@ type PageRow = { path: string; type: string; pageviews: number; visitors: number
 type Analytics = { ok: boolean; error?: string; range?: number; totals?: { pageviews: number; visitors: number }; categories?: Category[]; topPages?: PageRow[]; trend?: { date: string; pageviews: number; visitors: number }[]; source?: string; note?: string };
 type PingState = { busy: boolean; message: string; submitted?: number };
 
+type Keyword = { keyword: string; market: string; intent: string; priority: "High" | "Medium"; target: string };
+const keywordSeeds: Keyword[] = [
+  { keyword: "what movie should I watch", market: "USA", intent: "Decision", priority: "High", target: "/discover" },
+  { keyword: "what to watch tonight", market: "USA", intent: "Decision", priority: "High", target: "/discover" },
+  { keyword: "best movies to watch", market: "Worldwide", intent: "Discovery", priority: "High", target: "/movie" },
+  { keyword: "movies to watch when bored", market: "USA", intent: "Mood", priority: "High", target: "/discover" },
+  { keyword: "movies based on mood", market: "Worldwide", intent: "Mood", priority: "High", target: "/discover" },
+  { keyword: "best movies for a date night", market: "USA", intent: "Context", priority: "High", target: "/discover" },
+  { keyword: "best movies for family night", market: "USA", intent: "Context", priority: "High", target: "/discover" },
+  { keyword: "best movies under 2 hours", market: "USA", intent: "Time", priority: "Medium", target: "/discover" },
+  { keyword: "best thriller movies to watch", market: "Worldwide", intent: "Genre", priority: "High", target: "/genres/thriller" },
+  { keyword: "best comedy movies to watch", market: "Worldwide", intent: "Genre", priority: "High", target: "/genres/comedy" },
+  { keyword: "what movie should I watch tonight", market: "USA", intent: "Decision", priority: "High", target: "/discover" },
+];
+
 const navItems = [
   { href: "#overview", label: "Overview", icon: BarChart3 },
   { href: "#movies", label: "Movies", icon: Film },
   { href: "#series", label: "Series", icon: Tv },
   { href: "#anime", label: "Anime", icon: WandSparkles },
   { href: "#pages", label: "Top Pages", icon: Search },
+  { href: "/admin/seo", label: "Keyword Research", icon: Search },
   { href: "#indexing", label: "Indexing", icon: ListFilter },
   { href: "#ping", label: "Ping Center", icon: Radio },
 ];
@@ -79,6 +95,8 @@ export default function AdminDashboard() {
     }
   }
 
+  const keywordBingUrl = (keyword: string) => `https://www.bing.com/webmasters/keywordresearch?siteUrl=${encodeURIComponent(`${SITE_URL}/`)}&keyword=${encodeURIComponent(keyword)}`;
+
   return (
     <main className="min-h-screen bg-[#090914] text-white">
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 border-r border-white/10 bg-[#10101c] lg:flex lg:flex-col">
@@ -92,9 +110,13 @@ export default function AdminDashboard() {
           <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-[.2em] text-[#68657a]">Control center</div>
           <nav className="space-y-1">
             {navItems.map(({ href, label, icon: Icon }) => (
-              <a key={href} href={href} onClick={() => setActive(href)} className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold transition ${active === href ? "bg-[#7751ff]/15 text-white ring-1 ring-[#7751ff]/30" : "text-[#9996a9] hover:bg-white/5 hover:text-white"}`}>
-                <Icon size={17} className={active === href ? "text-[#9d83ff]" : ""} />{label}
-              </a>
+              href.startsWith("/") ? (
+                <Link key={href} href={href} className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-[#9996a9] hover:bg-white/5 hover:text-white"><Icon size={17}/>{label}</Link>
+              ) : (
+                <a key={href} href={href} onClick={() => setActive(href)} className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold transition ${active === href ? "bg-[#7751ff]/15 text-white ring-1 ring-[#7751ff]/30" : "text-[#9996a9] hover:bg-white/5 hover:text-white"}`}>
+                  <Icon size={17} className={active === href ? "text-[#9d83ff]" : ""} />{label}
+                </a>
+              )
             ))}
           </nav>
         </div>
@@ -109,13 +131,13 @@ export default function AdminDashboard() {
             <Link href="/admin" className="flex items-center gap-2"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#7751ff] font-black">C</div><span className="font-black">Cinevero Admin</span></Link>
             <button type="button" onClick={() => setMobileOpen(!mobileOpen)} className="rounded-xl border border-white/10 p-2.5">{mobileOpen ? <X size={19}/> : <Menu size={19}/>}</button>
           </div>
-          {mobileOpen && <nav className="mt-3 grid grid-cols-2 gap-1 border-t border-white/10 pt-3 sm:grid-cols-4">{navItems.map(({href,label,icon:Icon}) => <a key={href} href={href} onClick={() => { setActive(href); setMobileOpen(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-[#aaa6b9] hover:bg-white/5 hover:text-white"><Icon size={14}/>{label}</a>)}</nav>}
+          {mobileOpen && <nav className="mt-3 grid grid-cols-2 gap-1 border-t border-white/10 pt-3 sm:grid-cols-4">{navItems.map(({href,label,icon:Icon}) => href.startsWith("/") ? <Link key={href} href={href} onClick={()=>setMobileOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-[#aaa6b9] hover:bg-white/5 hover:text-white"><Icon size={14}/>{label}</Link> : <a key={href} href={href} onClick={() => { setActive(href); setMobileOpen(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold text-[#aaa6b9] hover:bg-white/5 hover:text-white"><Icon size={14}/>{label}</a>)}</nav>}
         </header>
 
         <div className="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <section className="rounded-3xl border border-white/10 bg-[#11111f] p-5 shadow-2xl shadow-black/20 sm:p-7">
             <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-              <div><div className="mb-2 text-xs font-black uppercase tracking-[.2em] text-[#9d83ff]">CINEVERO ADMIN</div><h1 className="text-3xl font-black tracking-tight sm:text-4xl">Control Center</h1><p className="mt-2 max-w-2xl text-sm text-[#918da2]">Traffic, movies, series, anime, indexing and search-engine pings — all in one place.</p></div>
+              <div><div className="mb-2 text-xs font-black uppercase tracking-[.2em] text-[#9d83ff]">CINEVERO ADMIN</div><h1 className="text-3xl font-black tracking-tight sm:text-4xl">Control Center</h1><p className="mt-2 max-w-2xl text-sm text-[#918da2]">Traffic, movies, series, anime, SEO, indexing and search-engine pings — all in one place.</p></div>
               <div className="flex items-center gap-2"><select value={range} onChange={(event) => setRange(event.target.value)} className="rounded-xl border border-white/10 bg-[#181827] px-3 py-2 text-sm font-bold outline-none"><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option></select><button onClick={load} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-[#aaa6b9] hover:bg-white/10 hover:text-white" title="Refresh"><RefreshCw size={17} className={loading ? "animate-spin" : ""}/></button></div>
             </div>
           </section>
@@ -134,6 +156,11 @@ export default function AdminDashboard() {
           <section id="pages" className="scroll-mt-24 mt-5 rounded-3xl border border-white/10 bg-[#11111f] p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-black">Content traffic</h2><p className="text-xs text-[#918da2]">Sort and filter real page views by content type.</p></div><div className="flex gap-2"><select value={filter} onChange={(e)=>setFilter(e.target.value)} className="rounded-xl border border-white/10 bg-[#181827] px-3 py-2 text-xs font-bold"><option>All</option><option>Movies</option><option>Series</option><option>Anime</option><option>Other</option></select><select value={sort} onChange={(e)=>setSort(e.target.value as "views"|"name")} className="rounded-xl border border-white/10 bg-[#181827] px-3 py-2 text-xs font-bold"><option value="views">Sort: Views</option><option value="name">Sort: Name</option></select></div></div><div className="mt-4 overflow-hidden rounded-2xl border border-white/10"><div className="grid grid-cols-[1fr_100px_100px] gap-3 bg-white/5 px-4 py-3 text-[11px] font-black uppercase tracking-wider text-[#68657a]"><span>Page</span><span>Type</span><span className="text-right">Views</span></div>{filteredPages.map((page) => <div key={page.path} className="grid grid-cols-[1fr_100px_100px] gap-3 border-t border-white/5 px-4 py-3 text-sm"><div className="min-w-0"><div className="truncate font-bold capitalize">{labelFor(page.path)}</div><div className="truncate text-[11px] text-[#68657a]">{page.path}</div></div><span className="text-xs font-bold text-[#b8aaff]">{page.type}</span><span className="text-right font-black">{fmt(page.pageviews)}</span></div>)}{!filteredPages.length && <div className="p-6 text-center text-sm text-[#68657a]">No analytics pages available for this filter.</div>}</div></section>
 
           {["Movies","Series","Anime"].map((name) => <section key={name} id={name.toLowerCase()} className="scroll-mt-24 mt-5 rounded-3xl border border-white/10 bg-[#11111f] p-5"><div className="flex items-center justify-between"><div><h2 className="font-black">{name}</h2><p className="text-xs text-[#918da2]">Traffic summary from real visitors.</p></div><span className="rounded-full bg-[#211e3a] px-3 py-1 text-xs font-black text-[#b8aaff]">{fmt(categoryMap.get(name)?.pageviews || 0)} views</span></div><div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-white/5 p-4"><div className="text-xs text-[#918da2]">Views</div><div className="mt-1 text-2xl font-black">{fmt(categoryMap.get(name)?.pageviews || 0)}</div></div><div className="rounded-2xl bg-white/5 p-4"><div className="text-xs text-[#918da2]">Visitors</div><div className="mt-1 text-2xl font-black">{fmt(categoryMap.get(name)?.visitors || 0)}</div></div><div className="rounded-2xl bg-white/5 p-4"><div className="text-xs text-[#918da2]">Tracked pages</div><div className="mt-1 text-2xl font-black">{fmt(categoryMap.get(name)?.pages || 0)}</div></div></div></section>)}
+
+          <section id="seo" className="scroll-mt-24 mt-5 rounded-3xl border border-[#7751ff]/20 bg-[#11111f] p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><div className="mb-1 text-[10px] font-black uppercase tracking-[.2em] text-[#9d83ff]">SEO</div><h2 className="text-xl font-black">Keyword Research</h2><p className="mt-1 text-xs text-[#918da2]">Cinevero decision-intent seed keywords ready for live validation in Bing.</p></div><Link href="/admin/seo" className="inline-flex items-center gap-2 rounded-xl bg-[#7751ff] px-4 py-2.5 text-xs font-black">Open Keyword Research <Search size={14}/></Link></div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{keywordSeeds.slice(0,6).map((item)=><a key={item.keyword} href={keywordBingUrl(item.keyword)} target="_blank" rel="noreferrer" className="rounded-2xl border border-white/10 bg-white/5 p-3 hover:border-[#7751ff]/40"><div className="text-sm font-bold">{item.keyword}</div><div className="mt-1 text-[10px] text-[#918da2]">{item.market} · {item.intent} · {item.priority}</div></a>)}</div>
+          </section>
 
           <section id="indexing" className="scroll-mt-24 mt-5 rounded-3xl border border-white/10 bg-[#11111f] p-5"><div className="flex items-center justify-between gap-3"><div><h2 className="font-black">Indexing Center</h2><p className="text-xs text-[#918da2]">Google Search Console inspection + IndexNow.</p></div><Link href="/admin/indexing" className="rounded-xl bg-[#7751ff] px-4 py-2 text-xs font-black text-white">Open full indexing</Link></div></section>
 
