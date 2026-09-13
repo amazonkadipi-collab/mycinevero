@@ -7,6 +7,14 @@ button,a,input { -webkit-tap-highlight-color:transparent; }
 button,a { transition:color 160ms ease,background-color 160ms ease,border-color 160ms ease,opacity 160ms ease,transform 160ms ease,box-shadow 160ms ease; }
 ::selection { background:#8d68ff;color:white; }
 
+.cinevero-native-ad { width:100%; max-width:100%; box-sizing:border-box; margin-left:auto; margin-right:auto; padding:10px 12px 12px; border:1px solid rgba(255,255,255,.08); border-radius:16px; background:rgba(23,22,42,.72); overflow:hidden; }
+.cinevero-native-ad__label { display:block; margin:0 0 7px; font-size:9px; line-height:1; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#9b99ad; opacity:.8; }
+.cinevero-native-ad__widget { width:100%; max-width:100%; min-width:0; box-sizing:border-box; overflow:hidden; }
+.cinevero-native-ad__widget > *, .cinevero-native-ad__widget iframe, .cinevero-native-ad__widget img { max-width:100% !important; box-sizing:border-box; }
+@media (min-width:768px) { .cinevero-native-ad { margin-top:22px; margin-bottom:22px; padding:11px 14px 14px; } .cinevero-native-ad__label { margin-bottom:8px; } }
+@media (max-width:767px) { .cinevero-native-ad { margin-top:14px; margin-bottom:14px; padding:9px 10px 10px; border-radius:14px; } }
+@media (max-width:380px) { .cinevero-native-ad { padding:8px 9px 9px; border-radius:12px; } }
+
 /* Keep the older route templates on the same dark product shell while they are progressively refreshed. */
 main[class*="bg-[#f7fcff]"], main[class*="bg-[#f5fbff]"], main[class*="bg-white"] { background:#0e0e1d !important; color:#f7f7fb !important; }
 main [class*="bg-white"] { background:#17162a !important; }
