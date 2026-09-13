@@ -8,5 +8,34 @@ export const metadata: Metadata = {
 };
 
 export default function DiscoverPage() {
-  return <div className="min-h-screen bg-zinc-50 text-zinc-950"><main className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 sm:py-12"><section className="rounded-3xl bg-zinc-950 px-6 py-9 text-white sm:px-10 sm:py-12"><p className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">CINEVERO DISCOVER</p><h1 className="mt-3 max-w-3xl text-4xl font-black tracking-tight sm:text-6xl">What should you watch right now?</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300 sm:text-base">Tell Cinevero what this moment feels like. It narrows candidates, enriches only the strongest ones, scores the context, and gives you five explainable picks.</p></section><CineveroDiscover/><section className="mt-12 border-t border-zinc-200 pt-8"><h2 className="text-lg font-bold">How Cinevero decides</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">Basic TMDB metadata is used to build a candidate pool. Cinevero selectively enriches the strongest candidates, applies context-aware scoring and diversity, then learns from feedback such as “too long” or “not for me”.</p><p className="mt-4 text-xs text-zinc-400">Recommendations use metadata supplied by TMDB. Cinevero does not host movie or TV files.</p></section></main></div>;
+  return (
+    <main className="min-h-screen bg-[#0e0e1d] pb-10 text-[#f7f7fb]">
+      <div className="mx-auto max-w-[1180px] px-4 pt-3 sm:px-6">
+        <nav aria-label="Breadcrumb" className="text-[11px] font-semibold text-[#9b99ad]">
+          <a href="/" className="hover:text-[#c3b7ff]">Home</a>
+          <span className="mx-2">›</span>
+          <span className="text-[#aaa6b9]">Discover</span>
+        </nav>
+      </div>
+
+      <section className="mx-auto mt-2 max-w-[1180px] overflow-hidden rounded-[24px] border border-white/10 bg-[#17162a] shadow-[0_18px_50px_rgba(0,0,0,.25)]">
+        <div className="relative px-5 py-7 sm:px-8 sm:py-9">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(119,81,255,.22),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(165,140,255,.08),transparent_38%)]" />
+          <div className="relative">
+            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#a58cff]">✦ CINEVERO DISCOVER</p>
+            <h1 className="mt-2 max-w-3xl text-3xl font-black tracking-tight text-white sm:text-5xl">What should you watch right now?</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#aaa6b9] sm:text-base">Tell Cinevero what this moment feels like. We narrow the options, rank the strongest matches and explain why each pick fits.</p>
+          </div>
+        </div>
+      </section>
+
+      <CineveroDiscover />
+
+      <section className="mx-auto mt-10 max-w-[1180px] border-t border-white/10 px-4 pt-7 sm:px-6">
+        <h2 className="text-lg font-black text-white">How Cinevero decides</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#9b99ad]">Basic TMDB metadata builds the candidate pool. Cinevero selectively enriches the strongest candidates, applies context-aware scoring and diversity, then learns from feedback such as “too long” or “not for me”.</p>
+        <p className="mt-4 text-xs text-[#77728c]">Recommendations use metadata supplied by TMDB. Cinevero does not host movie or TV files.</p>
+      </section>
+    </main>
+  );
 }
