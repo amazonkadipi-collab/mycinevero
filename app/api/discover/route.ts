@@ -4,6 +4,33 @@ import { prefilterCandidates, scoreCandidate, diversify, type DiscoverContext, t
 
 export const dynamic = 'force-dynamic';
 
+const WINDOW_MS = 60_000;
+const MAX_REQUESTS = 10;
+const rateLimit = new Map<string, { count: number; resetAt: number }>();
+
+function getClientKey(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for');
+  return forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+}
+
+function checkRateLimit(request: Request) {
+  const now = Date.now();
+  const key = getClientKey(request);
+  const current = rateLimit.get(key);
+
+  if (!current || current.resetAt <= now) {
+    rateLimit.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return { allowed: true, retryAfter: 60 };
+  }
+
+  if (current.count >= MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+
+  current.count += 1;
+  return { allowed: true, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+}
+
 const parseContext = (body: Record<string, unknown>): DiscoverContext => ({
   mood: typeof body.mood === 'string' ? body.mood : undefined,
   time: typeof body.time === 'number' ? body.time : undefined,
@@ -25,6 +52,14 @@ async function candidates(type: TmdbMediaType, context: DiscoverContext) {
 }
 
 export async function POST(request: Request) {
+  const limit = checkRateLimit(request);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { picks: [], error: 'Too many Discover requests. Please try again shortly.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
+  }
+
   try {
     const body = await request.json() as Record<string, unknown>;
     const context = parseContext(body);
