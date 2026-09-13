@@ -7,6 +7,7 @@ import VercelAnalyticsScript from '@/components/VercelAnalyticsScript';
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const BING_SITE_VERIFICATION = '84783D6C29D7BA1FE3D5503CF8ABF55D';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
+const ADSENSE_ACCOUNT = 'ca-pub-2298621556332463';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -25,5 +26,17 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body suppressHydrationWarning><VercelAnalyticsScript /><SiteHeader />{children}<LegalFooter /></body></html>;
+  return (
+    <html lang="en">
+      <head>
+        <meta name="google-adsense-account" content={ADSENSE_ACCOUNT} />
+      </head>
+      <body suppressHydrationWarning>
+        <VercelAnalyticsScript />
+        <SiteHeader />
+        {children}
+        <LegalFooter />
+      </body>
+    </html>
+  );
 }
