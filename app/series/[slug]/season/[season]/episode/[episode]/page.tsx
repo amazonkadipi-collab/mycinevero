@@ -1,80 +1,20 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CalendarDays, Clock, ExternalLink, Play, Star } from 'lucide-react';
+import { ArrowDownToLine, ChevronLeft, CirclePause, Download, Play, Star } from 'lucide-react';
 import { tmdbDetails, tmdbImage, tmdbSeason } from '@/lib/tmdb';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
-function parseId(value: string) { const match = value.match(/-(\d+)$/); return match ? Number(match[1]) : Number(value); }
-function titleOf(item: any) { return item.name || item.original_name || item.title || 'Untitled'; }
+function parseId(value:string){const match=value.match(/-(\d+)$/);return match?Number(match[1]):Number(value)}
+function titleOf(item:any){return item.name||item.original_name||item.title||'Untitled'}
+async function getEpisode(slug:string, seasonParam:string, episodeParam:string){const id=parseId(slug),seasonNumber=Number(seasonParam),episodeNumber=Number(episodeParam);if(!Number.isFinite(id)||!Number.isInteger(seasonNumber)||seasonNumber<1||!Number.isInteger(episodeNumber)||episodeNumber<1)return null;try{const [show,season]=await Promise.all([tmdbDetails('tv',id),tmdbSeason(id,seasonNumber)]);const episode=(season.episodes||[]).find((item:any)=>item.episode_number===episodeNumber);return episode?{id,show,season,episode,seasonNumber,episodeNumber}:null}catch{return null}}
+export async function generateMetadata({params}:{params:Promise<{slug:string;season:string;episode:string}>}):Promise<Metadata>{const {slug,season,episode}=await params;const data=await getEpisode(slug,season,episode);if(!data)return{title:'Episode not found',robots:{index:false}};const showTitle=titleOf(data.show),episodeTitle=data.episode.name||`Episode ${data.episodeNumber}`,description=data.episode.overview||`${episodeTitle} from ${showTitle}.`;return{title:`${episodeTitle} – ${showTitle}`,description,alternates:{canonical:`${SITE_URL}/series/${slug}/season/${data.seasonNumber}/episode/${data.episodeNumber}`}}}
 
-async function getEpisode(slug: string, seasonParam: string, episodeParam: string) {
-  const id = parseId(slug); const seasonNumber = Number(seasonParam); const episodeNumber = Number(episodeParam);
-  if (!Number.isFinite(id) || !Number.isInteger(seasonNumber) || seasonNumber < 1 || !Number.isInteger(episodeNumber) || episodeNumber < 1) return null;
-  try {
-    const [show, season] = await Promise.all([tmdbDetails('tv', id), tmdbSeason(id, seasonNumber)]);
-    const episode = (season.episodes || []).find((item: any) => item.episode_number === episodeNumber);
-    if (!episode) return null;
-    return { id, show, season, episode, seasonNumber, episodeNumber };
-  } catch { return null; }
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string; season: string; episode: string }> }): Promise<Metadata> {
-  const { slug, season, episode: episodeParam } = await params;
-  const data = await getEpisode(slug, season, episodeParam);
-  if (!data) return { title: 'Episode not found', robots: { index: false } };
-  const showTitle = titleOf(data.show); const episodeTitle = data.episode.name || `Episode ${data.episodeNumber}`;
-  const canonical = `${SITE_URL}/series/${slug}/season/${data.seasonNumber}/episode/${data.episodeNumber}`;
-  const description = data.episode.overview || `${episodeTitle} from ${showTitle}, Season ${data.seasonNumber}, Episode ${data.episodeNumber}.`;
-  return {
-    title: `${episodeTitle} – ${showTitle} S${data.seasonNumber}E${data.episodeNumber}`,
-    description,
-    alternates: { canonical },
-    openGraph: { title: `${episodeTitle} | ${showTitle}`, description, url: canonical, siteName: 'Cinevero', type: 'video.episode', images: data.episode.still_path ? [tmdbImage(data.episode.still_path, 'w780')] : data.show.backdrop_path ? [tmdbImage(data.show.backdrop_path, 'w780')] : [] },
-    twitter: { card: 'summary_large_image', title: `${episodeTitle} | ${showTitle}`, description, images: data.episode.still_path ? [tmdbImage(data.episode.still_path, 'w780')] : [] },
-  };
-}
-
-export default async function EpisodePage({ params }: { params: Promise<{ slug: string; season: string; episode: string }> }) {
-  const { slug, season, episode: episodeParam } = await params;
-  const data = await getEpisode(slug, season, episodeParam);
-  if (!data) notFound();
-  const { id, show, season: seasonData, episode, seasonNumber, episodeNumber } = data;
-  const showTitle = titleOf(show); const episodeTitle = episode.name || `Episode ${episodeNumber}`;
-  const episodeImage = episode.still_path ? tmdbImage(episode.still_path, 'w780') : show.backdrop_path ? tmdbImage(show.backdrop_path, 'w780') : show.poster_path ? tmdbImage(show.poster_path, 'w500') : '';
-  const previousEpisode = (seasonData.episodes || []).find((item: any) => item.episode_number === episodeNumber - 1);
-  const nextEpisode = (seasonData.episodes || []).find((item: any) => item.episode_number === episodeNumber + 1);
-  const seriesHref = `/series/${slug}?season=${seasonNumber}`;
-  const canonical = `${SITE_URL}/series/${slug}/season/${seasonNumber}/episode/${episodeNumber}`;
-  const tmdbHref = `https://www.themoviedb.org/tv/${id}/season/${seasonNumber}/episode/${episodeNumber}`;
-  const episodeLd = { '@context': 'https://schema.org', '@type': 'TVEpisode', name: episodeTitle, episodeNumber, image: episodeImage || undefined, description: episode.overview || undefined, datePublished: episode.air_date || undefined, timeRequired: episode.runtime ? `PT${episode.runtime}M` : undefined, partOfSeason: { '@type': 'TVSeason', seasonNumber, partOfSeries: { '@type': 'TVSeries', name: showTitle, url: `${SITE_URL}/series/${slug}` } }, url: canonical };
-  const breadcrumbLd = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL }, { '@type': 'ListItem', position: 2, name: 'Series', item: `${SITE_URL}/series` }, { '@type': 'ListItem', position: 3, name: showTitle, item: `${SITE_URL}/series/${slug}` }, { '@type': 'ListItem', position: 4, name: episodeTitle, item: canonical }] };
-
-  return <main className="min-h-screen bg-[#f7fcff] text-[#17324d]">
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(episodeLd) }} />
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-    <div className="mx-auto max-w-[1180px] px-4 pt-3 sm:px-6">
-      <nav aria-label="Breadcrumb" className="text-[11px] font-semibold text-[#6b879c]"><Link href="/" className="hover:text-[#168aad]">Home</Link><span className="mx-2">›</span><Link href="/series" className="hover:text-[#168aad]">Series</Link><span className="mx-2">›</span><Link href={seriesHref} className="hover:text-[#168aad]">{showTitle}</Link><span className="mx-2">›</span><span>S{seasonNumber} E{episodeNumber}</span></nav>
-    </div>
-    <section className="mx-auto mt-3 max-w-[1180px] overflow-hidden rounded-[22px] border border-[#d9edf4] bg-[#102d43] shadow-[0_12px_35px_rgba(22,138,173,0.12)]">
-      <div className="relative aspect-video max-h-[620px] overflow-hidden bg-[#102d43]">
-        {episodeImage ? <img src={episodeImage} alt={`${episodeTitle} - ${showTitle}`} className="h-full w-full object-cover" fetchPriority="high" /> : <div className="flex h-full items-center justify-center text-white">Episode {episodeNumber}</div>}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#102d43] via-transparent to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3 sm:bottom-6 sm:left-6 sm:right-6">
-          <div><span className="inline-flex rounded-full bg-[#ff6b4a] px-2.5 py-1 text-[10px] font-black text-white">S{seasonNumber} · E{episodeNumber}</span><h1 className="mt-2 text-2xl font-black text-white sm:text-4xl">{episodeTitle}</h1><p className="mt-1 text-sm font-semibold text-[#d7edf5]">{showTitle}</p></div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#102d43]/85 px-3 py-2 text-xs font-bold text-white"><Star size={13} fill="currentColor" />{episode.vote_average?.toFixed?.(1) || 'N/A'}</span>
-        </div>
-      </div>
-      <div className="p-4 sm:p-6">
-        <div className="flex flex-wrap gap-2 text-[11px] font-bold text-[#607d91]"><span className="inline-flex items-center gap-1 rounded-full bg-[#e9faff] px-2.5 py-1.5"><CalendarDays size={12} />{episode.air_date || 'Air date unavailable'}</span>{episode.runtime ? <span className="inline-flex items-center gap-1 rounded-full bg-[#fff0eb] px-2.5 py-1.5"><Clock size={12} />{episode.runtime} min</span> : null}</div>
-        {episode.overview && <p className="mt-4 max-w-4xl text-sm leading-7 text-[#5e788c]">{episode.overview}</p>}
-        <div className="mt-5 flex flex-wrap gap-2"><Link href={seriesHref} className="rounded-full bg-[#168aad] px-4 py-2.5 text-xs font-black text-white hover:bg-[#117793]">Back to season</Link><a href={tmdbHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-[#cfe5ed] bg-white px-4 py-2.5 text-xs font-black text-[#547388] hover:border-[#168aad] hover:text-[#168aad]"><ExternalLink size={13} /> View on TMDB</a></div>
-      </div>
-    </section>
-    <section className="mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-4 py-5 sm:px-6">
-      {previousEpisode ? <Link href={`/series/${slug}/season/${seasonNumber}/episode/${previousEpisode.episode_number}`} className="rounded-full border border-[#d8edf3] bg-white px-4 py-2.5 text-xs font-black hover:border-[#168aad]">← Episode {previousEpisode.episode_number}</Link> : <span />}
-      {nextEpisode ? <Link href={`/series/${slug}/season/${seasonNumber}/episode/${nextEpisode.episode_number}`} className="rounded-full bg-[#ff6b4a] px-4 py-2.5 text-xs font-black text-white hover:bg-[#e9553e]">Episode {nextEpisode.episode_number} →</Link> : <span />}
-    </section>
-    <section className="mx-auto max-w-[1180px] px-4 pb-10 sm:px-6"><div className="rounded-[18px] border border-[#d8edf3] bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><span className="rounded-full bg-[#e9faff] p-1.5 text-[#168aad]"><Play size={13} /></span><h2 className="text-sm font-black">About this episode</h2></div><p className="mt-2 text-xs leading-6 text-[#6b8496]">Cinevero organizes episode information so you can explore a series without leaving the site. Episode data and artwork are provided by TMDB.</p></div></section>
-  </main>;
-}
+export default async function EpisodePage({params}:{params:Promise<{slug:string;season:string;episode:string}>}){const {slug,season,episode:episodeParam}=await params;const data=await getEpisode(slug,season,episodeParam);if(!data)notFound();const {id,show,season:seasonData,episode,seasonNumber,episodeNumber}=data;const showTitle=titleOf(show),episodeTitle=episode.name||`Episode ${episodeNumber}`;const image=episode.still_path?tmdbImage(episode.still_path,'w780'):show.backdrop_path?tmdbImage(show.backdrop_path,'w780'):'';const seriesHref=`/series/${slug}?season=${seasonNumber}`;const episodes=seasonData.episodes||[];const episodeLd={'@context':'https://schema.org','@type':'TVEpisode',name:episodeTitle,episodeNumber,image:image||undefined,description:episode.overview||undefined,partOfSeason:{'@type':'TVSeason',seasonNumber,partOfSeries:{'@type':'TVSeries',name:showTitle}}};return <main className="min-h-screen bg-[#0e0e1d] pb-10 text-white"><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(episodeLd)}} />
+  <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-8"><div className="flex items-center gap-2 py-3 text-[11px] font-semibold text-[#9b99ad]"><Link href={seriesHref} className="flex items-center gap-1 text-white"><ChevronLeft size={16}/> Back</Link><span>•</span><span>{showTitle}</span></div>
+    <section className="relative overflow-hidden rounded-[24px] bg-[#17162a] shadow-[0_18px_50px_rgba(0,0,0,.35)]"><div className="relative aspect-video overflow-hidden sm:aspect-[2.05/1]">{image?<img src={image} alt={`${episodeTitle} - ${showTitle}`} className="h-full w-full object-cover" fetchPriority="high"/>:<div className="flex h-full items-center justify-center">Episode {episodeNumber}</div>}<div className="absolute inset-0 bg-gradient-to-t from-[#17162a] via-transparent to-black/20"/><div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2"><button aria-label="Previous" className="rounded-full bg-white/25 p-3 text-white backdrop-blur"><ChevronLeft size={20}/></button><button aria-label="Pause" className="rounded-full bg-white/90 p-4 text-[#6650d7]"><CirclePause size={23} fill="currentColor"/></button><button aria-label="Play next" className="rounded-full bg-white/25 p-3 text-white backdrop-blur"><Play size={20} fill="currentColor"/></button></div><div className="absolute bottom-3 left-4 right-4 flex items-center gap-3 text-[10px] font-bold text-white"><span>21:23</span><div className="h-1 flex-1 rounded-full bg-white/30"><div className="h-full w-[39%] rounded-full bg-white"/></div><span>-51:46</span></div></div>
+      <div className="px-4 pb-5 pt-1 sm:px-7 sm:pb-7"><div className="flex items-start justify-between gap-3"><div><h1 className="text-xl font-black tracking-tight sm:text-3xl">{showTitle}</h1><p className="mt-1 text-[12px] font-bold text-[#a58cff]">{episodeTitle} <span className="mx-1 text-[#6d6882]">|</span> Ep {episodeNumber} of {episodes.length}</p></div><button aria-label="Download episode" className="rounded-xl bg-white/5 p-2.5 text-[#aaa6b9] hover:bg-white/10 hover:text-white"><Download size={18}/></button></div><div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[#aaa6b9]"><span>{(show.first_air_date||'2023').slice(0,4)}</span><span>•</span><span className="flex items-center gap-1 text-amber-300"><Star size={12} fill="currentColor"/> {episode.vote_average?.toFixed?.(1)||'4.5'}</span><span>•</span><span>Family</span><span>•</span><span>{episode.runtime||43} Minutes</span></div>{episode.overview&&<p className="mt-3 line-clamp-3 text-[12px] leading-5 text-[#aaa6b9]">{episode.overview}</p>}
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><Link href={seriesHref} className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold text-[#aaa6b9]">Trailer</Link><Link href={seriesHref} className="shrink-0 rounded-full bg-white px-4 py-2 text-[11px] font-black text-[#17162a]">Episodes</Link><span className="shrink-0 rounded-full border border-white/10 px-4 py-2 text-[11px] font-bold text-[#aaa6b9]">Top Cast</span><span className="shrink-0 rounded-full border border-white/10 px-4 py-2 text-[11px] font-bold text-[#aaa6b9]">Also like this</span></div>
+      </div></section>
+    <section className="mt-7"><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-black">Episodes</h2><span className="rounded-full bg-[#211e3a] px-3 py-1 text-[11px] font-bold text-[#aaa6b9]">Season {seasonNumber}</span></div><div className="mb-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{episodes.slice(0,16).map((item:any)=><Link key={item.id} href={`/series/${slug}/season/${seasonNumber}/episode/${item.episode_number}`} className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xs font-black ${item.episode_number===episodeNumber?'bg-[#7751ff] text-white shadow-[0_8px_18px_rgba(119,81,255,.35)]':'bg-[#211e3a] text-[#aaa6b9] hover:bg-[#302a53]'}`}>{String(item.episode_number).padStart(2,'0')}</Link>)}</div><div className="grid gap-3">{episodes.map((item:any)=>{const itemImage=item.still_path?tmdbImage(item.still_path,'w500'):image;return <Link key={item.id} href={`/series/${slug}/season/${seasonNumber}/episode/${item.episode_number}`} className={`group flex gap-3 rounded-2xl p-2.5 transition ${item.episode_number===episodeNumber?'bg-[#211e3a] ring-1 ring-[#7751ff]/50':'hover:bg-[#17162a]'}`}><div className="relative h-[76px] w-[128px] shrink-0 overflow-hidden rounded-xl bg-[#211e3a] sm:h-[90px] sm:w-[160px]">{itemImage&&<img src={itemImage} alt={item.name} className="h-full w-full object-cover transition group-hover:scale-105" loading="lazy"/>}<span className="absolute bottom-2 left-2 rounded-md bg-black/65 px-1.5 py-1 text-[9px] font-black text-white">EP {item.episode_number}</span>{item.episode_number===episodeNumber&&<span className="absolute inset-0 flex items-center justify-center bg-black/25"><Play size={22} fill="white"/></span>}</div><div className="min-w-0 flex-1 py-1"><div className="flex items-center justify-between gap-2"><h3 className="truncate text-[13px] font-black text-white">{item.name}</h3><ArrowDownToLine size={15} className="shrink-0 text-[#77728c]"/></div><p className="mt-1 text-[11px] font-bold text-[#aaa6b9]">{item.runtime||43} Minutes</p><p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#77728c]">{item.overview||'An exciting new chapter in the story.'}</p></div></Link>})}</div></section>
+  </div></main>}

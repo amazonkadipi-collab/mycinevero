@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock3, Heart, RotateCcw, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { slugify, tmdbImage } from '@/lib/tmdb';
@@ -16,9 +16,8 @@ const pace=[['slow','🌙 Slow & atmospheric'],['balanced','✨ Balanced'],['fas
 const key='cinevero-feedback-v1';
 function readFeedback():FeedbackEvent[]{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return[]}}
 export default function CineveroDiscover(){
- const [step,setStep]=useState(0); const [loading,setLoading]=useState(false); const [picks,setPicks]=useState<Pick[]>([]); const [feedback,setFeedback]=useState<FeedbackEvent[]>([]);
+ const [step,setStep]=useState(0); const [loading,setLoading]=useState(false); const [picks,setPicks]=useState<Pick[]>([]); const [feedback,setFeedback]=useState<FeedbackEvent[]>(() => typeof window === 'undefined' ? [] : readFeedback());
  const [ctx,setCtx]=useState<Context>({mood:'feelgood',time:120,genre:0,who:'solo',language:'',minRating:0,pace:'balanced'});
- useEffect(()=>setFeedback(readFeedback()),[]);
  const update=(key:keyof Context,value:string|number)=>setCtx(x=>({...x,[key]:value}));
  const submit=async(nextFeedback=feedback)=>{setLoading(true);try{const res=await fetch('/api/discover',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...ctx,genre:ctx.genre||undefined,minRating:ctx.minRating||undefined,feedback:nextFeedback})});const data=await res.json();setPicks(data.picks||[]);setStep(4)}catch{setPicks([])}finally{setLoading(false)}};
  const sendFeedback=(pick:Pick,reason:FeedbackEvent['reason'])=>{const event:FeedbackEvent={action:'feedback',reason,titleId:pick.id,mediaType:pick.media_type,timestamp:Date.now()};const next=[...feedback,event];setFeedback(next);localStorage.setItem(key,JSON.stringify(next.slice(-100)));if(reason)void submit(next)};
