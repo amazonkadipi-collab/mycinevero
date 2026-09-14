@@ -17,9 +17,10 @@ export async function GET(req: NextRequest) {
   const type = media(req.nextUrl.searchParams.get('type')); const id = tmdb(req.nextUrl.searchParams.get('tmdbId'));
   if (!type || !id) return json({ error: 'Invalid title' }, 400);
   try {
-    const data = await getCommunity(type, id);
+    const guest = await guestId(req);
+    const data = await getCommunity(type, id, fingerprint(req, guest));
     const response = json(data);
-    if (!req.cookies.get(COOKIE)) response.cookies.set(COOKIE, await guestId(req), { httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 365 });
+    if (!req.cookies.get(COOKIE)) response.cookies.set(COOKIE, guest, { httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 365 });
     return response;
   } catch { return json({ error: 'Community is temporarily unavailable' }, 503); }
 }
@@ -44,6 +45,16 @@ export async function POST(req: NextRequest) {
     if (body?.action === 'rating') {
       const rating = Number(body.rating); if (!Number.isInteger(rating) || rating < 1 || rating > 5) return json({ error: 'Rating must be 1 to 5' }, 400);
       const row = await upsertRating({ tmdbId: id, mediaType: type, rating, recommend: Boolean(body.recommend), watched: Boolean(body.watched), fingerprint: fp });
+      const response = json({ ok: true, rating: row });
+      if (!req.cookies.get(COOKIE)) response.cookies.set(COOKIE, guest, { httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 365 });
+      return response;
+    }
+    if (body?.action === 'preference') {
+      if (!['recommend', 'watched'].includes(body.preference)) return json({ error: 'Invalid preference' }, 400);
+      const existing = await getCommunity(type, id, fp);
+      if (!existing.mine.rating) return json({ error: 'Rate this title first.' }, 400);
+      const current = existing.mine;
+      const row = await upsertRating({ tmdbId: id, mediaType: type, rating: current.rating, recommend: body.preference === 'recommend' ? Boolean(body.value) : current.recommend, watched: body.preference === 'watched' ? Boolean(body.value) : current.watched, fingerprint: fp });
       return json({ ok: true, rating: row });
     }
     if (body?.action === 'reaction') {
