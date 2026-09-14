@@ -23,7 +23,7 @@ export function hasDisallowedLink(text: string) {
   if (/<[^>]*>|javascript\s*:|data\s*:/i.test(value)) return true;
   const compact = value.toLowerCase().replace(/[\s\u00a0]+/g, '');
   if (/(https?:\/\/|ftp:\/\/|www\.)/i.test(compact)) return true;
-  const normalized = value.toLowerCase().replace(/\[\s*\.\s*\]/g, '.').replace(/\(\s*\.\s*\)/g, '.').replace(/\s*\(\s*dot\s*\)\s*/gi, '.').replace(/\s*\[\s*dot\s*\]\s*/gi, '.').replace(/\s+dot\s+/gi, '.').replace(/\s*\.\s*/g, '.');
+  const normalized = value.toLowerCase().replace(/[\[\(]\s*\.\s*[\]\)]/g, '.').replace(/\s*\(\s*dot\s*\)\s*/gi, '.').replace(/\s*\[\s*dot\s*\]\s*/gi, '.').replace(/\s+dot\s+/gi, '.').replace(/\s*\.\s*/g, '.');
   return /(?:^|[^a-z0-9])(?:https?:\/\/|www\.)?[a-z0-9][a-z0-9.-]*\.(?:com|net|org|io|co|me|tv|ly|gg|dev|app|site|online|xyz|info|biz|store|shop|link|live|cc|to|ru|uk|us|ca|fr|de|es|it|ma)(?:$|[^a-z0-9])/i.test(normalized);
 }
 
@@ -38,6 +38,13 @@ export async function getCommunity(mediaType: CommunityMediaType, tmdbId: number
   const comments = await commentsResponse.json(); const ratings = await ratingsResponse.json(); const count = ratings.length;
   const average = count ? Math.round((ratings.reduce((sum: number, row: any) => sum + Number(row.rating), 0) / count) * 10) / 10 : null;
   return { comments, rating: { average, count, recommendations: ratings.filter((r: any) => r.recommend).length, watched: ratings.filter((r: any) => r.watched).length } };
+}
+
+export async function recentCommentCount(fingerprint: string, minutes = 10) {
+  const since = new Date(Date.now() - minutes * 60_000).toISOString();
+  const response = await supabase(`cinevero_community_comments?guest_fingerprint=eq.${encodeURIComponent(fingerprint)}&created_at=gte.${encodeURIComponent(since)}&select=id`);
+  const rows = await response.json();
+  return Array.isArray(rows) ? rows.length : 0;
 }
 
 export async function insertComment(input: { tmdbId: number; mediaType: CommunityMediaType; displayName: string; comment: string; isSpoiler: boolean; fingerprint: string }) {
@@ -56,6 +63,16 @@ export async function upsertRating(input: { tmdbId: number; mediaType: Community
 }
 
 export async function reactToComment(input: { commentId: string; reaction: 'like' | 'dislike' | 'report'; fingerprint: string }) {
-  const response = await supabase('cinevero_comment_reactions', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ comment_id: input.commentId, reaction: input.reaction, guest_fingerprint: input.fingerprint }) });
-  return response.json();
+  assertConfig();
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/cinevero_react_to_comment`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_SERVICE_ROLE_KEY!, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_comment_id: input.commentId, p_reaction: input.reaction, p_guest_fingerprint: input.fingerprint }),
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Community reaction error: ${response.status}`);
+  }
+  return { ok: true };
 }
