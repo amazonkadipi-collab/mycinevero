@@ -4,16 +4,25 @@ import { useEffect, useState } from 'react';
 import { MessageCircle, Star, ThumbsDown, ThumbsUp, Flag, Eye, Send, ShieldCheck } from 'lucide-react';
 
 type Props = { tmdbId: number; mediaType: 'movie' | 'tv'; title: string };
-type Community = { comments: any[]; rating: { average: number | null; count: number; recommendations: number; watched: number } };
+type Community = { comments: any[]; rating: { average: number | null; count: number; recommendations: number; watched: number }; mine?: { rating: number; recommend: boolean; watched: boolean } };
 
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
 
 export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
   const [data, setData] = useState<Community | null>(null);
-  const [rating, setRating] = useState(0); const [hoverRating, setHoverRating] = useState(0); const [recommend, setRecommend] = useState(true); const [watched, setWatched] = useState(true);
+  const [rating, setRating] = useState(0); const [hoverRating, setHoverRating] = useState(0); const [recommend, setRecommend] = useState(false); const [watched, setWatched] = useState(false);
   const [name, setName] = useState(''); const [comment, setComment] = useState(''); const [spoiler, setSpoiler] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
-  async function load() { const response = await fetch(`/api/community?type=${mediaType}&tmdbId=${tmdbId}`, { cache: 'no-store' }); if (response.ok) setData(await response.json()); }
+  async function load() {
+    const response = await fetch(`/api/community?type=${mediaType}&tmdbId=${tmdbId}`, { cache: 'no-store' });
+    if (response.ok) {
+      const next = await response.json() as Community;
+      setData(next);
+      setRating(next.mine?.rating ?? 0);
+      setRecommend(next.mine?.recommend ?? false);
+      setWatched(next.mine?.watched ?? false);
+    }
+  }
   useEffect(() => { load(); }, [tmdbId, mediaType]);
 
   async function post(body: any) {
@@ -30,6 +39,14 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
 
   async function submitRating(value: number) {
     setRating(value); setHoverRating(0); const result = await post({ action: 'rating', rating: value, recommend, watched }); if (result?.ok) await load();
+  }
+
+  async function togglePreference(preference: 'recommend' | 'watched') {
+    const value = preference === 'recommend' ? !recommend : !watched;
+    if (preference === 'recommend') setRecommend(value); else setWatched(value);
+    if (!rating) return;
+    const result = await post({ action: 'preference', preference, value });
+    if (result?.ok) await load(); else if (preference === 'recommend') setRecommend(!value); else setWatched(!value);
   }
 
   async function reaction(commentId: string, value: 'like' | 'dislike' | 'report') { const result = await post({ action: 'reaction', commentId, reaction: value }); if (result?.ok) await load(); }
@@ -56,7 +73,10 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
           <div className="mt-2 flex gap-0.5" role="radiogroup" aria-label="Rate from 1 to 5 stars" onMouseLeave={() => setHoverRating(0)}>
             {STAR_VALUES.map(value => <button key={value} type="button" onClick={() => submitRating(value)} onMouseEnter={() => setHoverRating(value)} onFocus={() => setHoverRating(value)} onBlur={() => setHoverRating(0)} disabled={busy} aria-label={`Rate ${value} out of 5`} aria-checked={rating === value} role="radio" className={`rounded-md p-1 transition-all duration-100 ${value <= activeRating ? 'scale-105 text-[#ffb02e]' : 'text-[#c5d8e2] hover:text-[#ffb02e]'}`}><Star size={27} fill={value <= activeRating ? 'currentColor' : 'none'} strokeWidth={1.9} /></button>)}
           </div>
-          <div className="mt-3 grid gap-2"><button type="button" onClick={() => { setRecommend(v => !v); }} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold ${recommend ? 'border-[#bfe6ef] bg-white text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`}><span>Recommend it</span><ThumbsUp size={14} /></button><button type="button" onClick={() => { setWatched(v => !v); }} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold ${watched ? 'border-[#bfe6ef] bg-white text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`}><span>I watched it</span><Eye size={14} /></button></div>
+          <div className="mt-3 grid gap-2">
+            <button type="button" onClick={() => togglePreference('recommend')} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${recommend ? 'border-[#7ed1df] bg-[#e9f9fc] text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`} aria-pressed={recommend}><span>Recommend it</span><ThumbsUp size={14} className={recommend ? 'fill-current' : ''} /></button>
+            <button type="button" onClick={() => togglePreference('watched')} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${watched ? 'border-[#7ed1df] bg-[#e9f9fc] text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`} aria-pressed={watched}><span>I watched it</span><Eye size={14} className={watched ? 'fill-current' : ''} /></button>
+          </div>
           <p className="mt-3 text-[10px] leading-4 text-[#8aa0ae]">This community score is separate from the TMDB rating shown on the title page and in search.</p>
         </div>
 
