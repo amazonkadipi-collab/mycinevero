@@ -30,14 +30,20 @@ export function hasDisallowedLink(text: string) {
 export function cleanName(value: unknown) { return String(value ?? '').normalize('NFKC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 40); }
 export function cleanComment(value: unknown) { return String(value ?? '').normalize('NFKC').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, 1000); }
 
-export async function getCommunity(mediaType: CommunityMediaType, tmdbId: number) {
+export async function getCommunity(mediaType: CommunityMediaType, tmdbId: number, fingerprint?: string) {
   const [commentsResponse, ratingsResponse] = await Promise.all([
     supabase(`cinevero_community_comments?tmdb_id=eq.${tmdbId}&media_type=eq.${mediaType}&status=eq.published&select=id,display_name,comment,is_spoiler,like_count,dislike_count,report_count,created_at&order=created_at.desc&limit=100`),
     supabase(`cinevero_community_ratings?tmdb_id=eq.${tmdbId}&media_type=eq.${mediaType}&select=rating,recommend,watched`),
   ]);
   const comments = await commentsResponse.json(); const ratings = await ratingsResponse.json(); const count = ratings.length;
   const average = count ? Math.round((ratings.reduce((sum: number, row: any) => sum + Number(row.rating), 0) / count) * 10) / 10 : null;
-  return { comments, rating: { average, count, recommendations: ratings.filter((r: any) => r.recommend).length, watched: ratings.filter((r: any) => r.watched).length } };
+  let mine = { rating: 0, recommend: false, watched: false };
+  if (fingerprint) {
+    const mineResponse = await supabase(`cinevero_community_ratings?tmdb_id=eq.${tmdbId}&media_type=eq.${mediaType}&guest_fingerprint=eq.${encodeURIComponent(fingerprint)}&select=rating,recommend,watched&limit=1`);
+    const own = (await mineResponse.json())?.[0];
+    if (own) mine = { rating: Number(own.rating) || 0, recommend: Boolean(own.recommend), watched: Boolean(own.watched) };
+  }
+  return { comments, rating: { average, count, recommendations: ratings.filter((r: any) => r.recommend).length, watched: ratings.filter((r: any) => r.watched).length }, mine };
 }
 
 export async function recentCommentCount(fingerprint: string, minutes = 10) {
