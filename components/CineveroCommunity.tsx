@@ -6,6 +6,8 @@ import { MessageCircle, Star, ThumbsDown, ThumbsUp, Flag, Eye, Send, ShieldCheck
 type Props = { tmdbId: number; mediaType: 'movie' | 'tv'; title: string };
 type Community = { comments: any[]; rating: { average: number | null; count: number; recommendations: number; watched: number } };
 
+const STAR_VALUES = [1, 2, 3, 4, 5] as const;
+
 export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
   const [data, setData] = useState<Community | null>(null);
   const [rating, setRating] = useState(0); const [recommend, setRecommend] = useState(true); const [watched, setWatched] = useState(true);
@@ -32,16 +34,24 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
 
   async function reaction(commentId: string, value: 'like' | 'dislike' | 'report') { const result = await post({ action: 'reaction', commentId, reaction: value }); if (result?.ok) await load(); }
 
+  const communityAverage = data?.rating.average ?? null;
+  const communityStars = communityAverage === null ? 0 : Math.max(1, Math.min(5, Math.round(communityAverage)));
+  const ratingCount = data?.rating.count ?? 0;
+
   return <section className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6" aria-labelledby="cinevero-community-title">
     <div className="rounded-[22px] border border-[#d8edf3] bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div><div className="flex items-center gap-2"><MessageCircle size={17} className="text-[#168aad]" /><h2 id="cinevero-community-title" className="text-xl font-black">What viewers think</h2></div><p className="mt-1 text-xs text-[#7891a3]">Share your experience with {title}. No account required.</p></div>
-        <div className="flex items-center gap-2 rounded-full bg-[#f4fbfd] px-3 py-2"><Star size={15} className="text-[#ff6b4a]" fill="currentColor" /><strong>{data?.rating.average ?? '—'}</strong><span className="text-[10px] text-[#7891a3]">Cinevero rating · {data?.rating.count ?? 0}</span></div>
+        <div className="flex flex-col items-end gap-1 rounded-[16px] bg-[#f4fbfd] px-3 py-2.5" aria-label={communityAverage === null ? 'No Cinevero ratings yet' : `Cinevero community rating: ${communityAverage} out of 5`}>
+          <span className="text-[10px] font-black uppercase tracking-wide text-[#7891a3]">Cinevero rating</span>
+          <span className="flex items-center gap-0.5" aria-hidden="true">{STAR_VALUES.map(value => <Star key={value} size={16} className={value <= communityStars ? 'text-[#ffb02e]' : 'text-[#cbdde5]'} fill={value <= communityStars ? 'currentColor' : 'none'} />)}</span>
+          <span className="text-[10px] font-semibold text-[#8aa0ae]">{ratingCount ? `${ratingCount} ${ratingCount === 1 ? 'rating' : 'ratings'}` : 'No ratings yet'}</span>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[280px_1fr]">
         <div className="rounded-[18px] bg-[#f7fcff] p-4">
-          <p className="text-xs font-black">Your rating</p><div className="mt-2 flex gap-1" aria-label="Rate from 1 to 5 stars">{[1,2,3,4,5].map(value => <button key={value} type="button" onClick={() => submitRating(value)} disabled={busy} aria-label={`${value} out of 5`} className="rounded-md p-1 text-[#c5d8e2] hover:text-[#ff6b4a]"><Star size={22} fill={value <= rating ? 'currentColor' : 'none'} /></button>)}</div>
+          <p className="text-xs font-black">Your rating</p><div className="mt-2 flex gap-1" aria-label="Rate from 1 to 5 stars">{STAR_VALUES.map(value => <button key={value} type="button" onClick={() => submitRating(value)} disabled={busy} aria-label={`Rate ${value} out of 5`} className={`rounded-md p-1 transition ${value <= rating ? 'text-[#ffb02e]' : 'text-[#c5d8e2] hover:text-[#ffb02e]'}`}><Star size={24} fill={value <= rating ? 'currentColor' : 'none'} /></button>)}</div>
           <div className="mt-3 grid gap-2"><button type="button" onClick={() => { setRecommend(v => !v); }} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold ${recommend ? 'border-[#bfe6ef] bg-white text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`}><span>Recommend it</span><ThumbsUp size={14} /></button><button type="button" onClick={() => { setWatched(v => !v); }} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold ${watched ? 'border-[#bfe6ef] bg-white text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`}><span>I watched it</span><Eye size={14} /></button></div>
           <p className="mt-3 text-[10px] leading-4 text-[#8aa0ae]">This community score is separate from the TMDB rating shown on the title page and in search.</p>
         </div>
