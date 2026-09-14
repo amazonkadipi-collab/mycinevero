@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Star, Clock, ExternalLink, Play, Heart, Sparkles } from 'lucide-react';
 import { slugify, tmdbDetails, tmdbImage } from '@/lib/tmdb';
 import CineveroInsight from '@/components/CineveroInsight';
+import CineveroCommunity from '@/components/CineveroCommunity';
 import DisplayAd300x250 from '@/components/DisplayAd300x250';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
@@ -53,6 +54,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
     </section>
 
     <CineveroInsight title={title} genres={genres} runtime={movie.runtime} overview={movie.overview} type="movie" />
+    <CineveroCommunity tmdbId={id} mediaType="movie" title={title} />
 
     {trailer && <section className="mx-auto max-w-[1180px] px-4 py-5 sm:px-6"><div className="mb-3 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="rounded-full bg-[#fff0eb] p-1.5 text-[#ff6b4a]"><Play size={13} fill="currentColor" /></span><h2 className="text-lg font-black">Official trailer</h2></div><a href={`https://www.youtube.com/watch?v=${trailer.key}`} target="_blank" rel="noreferrer" aria-label={`Open ${title} trailer on YouTube`} className="inline-flex items-center gap-2 rounded-full border border-[#ffd0c6] bg-[#fff7f4] px-3 py-1.5 text-[11px] font-black text-[#e9553e] transition hover:-translate-y-0.5 hover:bg-[#fff0eb]"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ff6b4a] text-white shadow-sm"><Play size={11} fill="currentColor" /></span>Play</a></div><div className="relative aspect-video overflow-hidden rounded-[20px] border border-[#d8edf3] bg-[#102d43] shadow-sm"><iframe className="h-full w-full" src={`https://www.youtube.com/embed/${trailer.key}`} title={`${title} official trailer`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></section>}
 
