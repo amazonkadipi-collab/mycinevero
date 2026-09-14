@@ -11,12 +11,7 @@ async function supabase(path: string, init: RequestInit = {}) {
   assertConfig();
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
-    headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY!,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
+    headers: { apikey: SUPABASE_SERVICE_ROLE_KEY!, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
     cache: 'no-store',
   });
   if (!response.ok) throw new Error(`Community storage error: ${response.status}`);
@@ -28,41 +23,36 @@ export function hasDisallowedLink(text: string) {
   if (/<[^>]*>|javascript\s*:|data\s*:/i.test(value)) return true;
   const compact = value.toLowerCase().replace(/[\s\u00a0]+/g, '');
   if (/(https?:\/\/|ftp:\/\/|www\.)/i.test(compact)) return true;
-  if (/[a-z0-9][a-z0-9_-]*(?:\s*\[?\.?\s*\]?\s*|\s+\(?dot\)?\s+)[a-z]{2,}(?:\s*\[?\.?\s*\]?\s*|\s+\(?dot\)?\s+)[a-z]{2,}/i.test(value)) return true;
   const normalized = value.toLowerCase().replace(/\[\s*\.\s*\]/g, '.').replace(/\(\s*\.\s*\)/g, '.').replace(/\s*\(\s*dot\s*\)\s*/gi, '.').replace(/\s*\[\s*dot\s*\]\s*/gi, '.').replace(/\s+dot\s+/gi, '.').replace(/\s*\.\s*/g, '.');
   return /(?:^|[^a-z0-9])(?:https?:\/\/|www\.)?[a-z0-9][a-z0-9.-]*\.(?:com|net|org|io|co|me|tv|ly|gg|dev|app|site|online|xyz|info|biz|store|shop|link|live|cc|to|ru|uk|us|ca|fr|de|es|it|ma)(?:$|[^a-z0-9])/i.test(normalized);
 }
 
-export function cleanName(value: unknown) {
-  return String(value ?? '').normalize('NFKC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 40);
-}
-
-export function cleanComment(value: unknown) {
-  return String(value ?? '').normalize('NFKC').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, 1000);
-}
+export function cleanName(value: unknown) { return String(value ?? '').normalize('NFKC').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, 40); }
+export function cleanComment(value: unknown) { return String(value ?? '').normalize('NFKC').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, 1000); }
 
 export async function getCommunity(mediaType: CommunityMediaType, tmdbId: number) {
   const [commentsResponse, ratingsResponse] = await Promise.all([
     supabase(`cinevero_community_comments?tmdb_id=eq.${tmdbId}&media_type=eq.${mediaType}&status=eq.published&select=id,display_name,comment,is_spoiler,like_count,dislike_count,report_count,created_at&order=created_at.desc&limit=100`),
     supabase(`cinevero_community_ratings?tmdb_id=eq.${tmdbId}&media_type=eq.${mediaType}&select=rating,recommend,watched`),
   ]);
-  const comments = await commentsResponse.json();
-  const ratings = await ratingsResponse.json();
-  const count = ratings.length;
+  const comments = await commentsResponse.json(); const ratings = await ratingsResponse.json(); const count = ratings.length;
   const average = count ? Math.round((ratings.reduce((sum: number, row: any) => sum + Number(row.rating), 0) / count) * 10) / 10 : null;
   return { comments, rating: { average, count, recommendations: ratings.filter((r: any) => r.recommend).length, watched: ratings.filter((r: any) => r.watched).length } };
 }
 
 export async function insertComment(input: { tmdbId: number; mediaType: CommunityMediaType; displayName: string; comment: string; isSpoiler: boolean; fingerprint: string }) {
   const response = await supabase('cinevero_community_comments', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ tmdb_id: input.tmdbId, media_type: input.mediaType, display_name: input.displayName, comment: input.comment, is_spoiler: input.isSpoiler, guest_fingerprint: input.fingerprint }) });
-  const rows = await response.json();
-  return rows[0];
+  const rows = await response.json(); return rows[0];
 }
 
 export async function upsertRating(input: { tmdbId: number; mediaType: CommunityMediaType; rating: number; recommend: boolean; watched: boolean; fingerprint: string }) {
-  const response = await supabase('cinevero_community_ratings?on_conflict=tmdb_id,media_type,guest_fingerprint', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify({ tmdb_id: input.tmdbId, media_type: input.mediaType, rating: input.rating, recommend: input.recommend, watched: input.watched, guest_fingerprint: input.fingerprint }) });
-  const rows = await response.json();
-  return rows[0];
+  const existing = await supabase(`cinevero_community_ratings?tmdb_id=eq.${input.tmdbId}&media_type=eq.${input.mediaType}&guest_fingerprint=eq.${input.fingerprint}&select=id&limit=1`).then(r => r.json());
+  if (existing[0]?.id) {
+    const response = await supabase(`cinevero_community_ratings?id=eq.${existing[0].id}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ rating: input.rating, recommend: input.recommend, watched: input.watched, updated_at: new Date().toISOString() }) });
+    const rows = await response.json(); return rows[0];
+  }
+  const response = await supabase('cinevero_community_ratings', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ tmdb_id: input.tmdbId, media_type: input.mediaType, rating: input.rating, recommend: input.recommend, watched: input.watched, guest_fingerprint: input.fingerprint }) });
+  const rows = await response.json(); return rows[0];
 }
 
 export async function reactToComment(input: { commentId: string; reaction: 'like' | 'dislike' | 'report'; fingerprint: string }) {
