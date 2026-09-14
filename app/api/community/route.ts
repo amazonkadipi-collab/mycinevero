@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash, randomUUID } from 'crypto';
-import { getCommunity, hasDisallowedLink, cleanComment, cleanName, insertComment, upsertRating, reactToComment, type CommunityMediaType } from '@/lib/cinevero-community';
+import { getCommunity, hasDisallowedLink, cleanComment, cleanName, insertComment, upsertRating, reactToComment, recentCommentCount, type CommunityMediaType } from '@/lib/cinevero-community';
 
 const COOKIE = 'cinevero_guest';
 
@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
       const name = cleanName(body.displayName); const comment = cleanComment(body.comment);
       if (name.length < 1 || comment.length < 1) return json({ error: 'Name and comment are required' }, 400);
       if (hasDisallowedLink(comment)) return json({ error: 'Links are not allowed in comments.' }, 400);
+      const recent = await recentCommentCount(fp, 10);
+      if (recent >= 5) return json({ error: 'Please wait a few minutes before posting again.' }, 429);
       const row = await insertComment({ tmdbId: id, mediaType: type, displayName: name, comment, isSpoiler: Boolean(body.isSpoiler), fingerprint: fp });
       const response = json({ ok: true, comment: row });
       if (!req.cookies.get(COOKIE)) response.cookies.set(COOKIE, guest, { httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 365 });
