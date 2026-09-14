@@ -54,6 +54,8 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
   const communityAverage = data?.rating.average ?? null;
   const communityStars = communityAverage === null ? 0 : Math.max(1, Math.min(5, Math.round(communityAverage)));
   const ratingCount = data?.rating.count ?? 0;
+  const recommendationCount = data?.rating.recommendations ?? 0;
+  const watchedCount = data?.rating.watched ?? 0;
   const activeRating = hoverRating || rating;
 
   return <section className="mx-auto max-w-[1180px] px-4 py-6 sm:px-6" aria-labelledby="cinevero-community-title">
@@ -74,8 +76,8 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
             {STAR_VALUES.map(value => <button key={value} type="button" onClick={() => submitRating(value)} onMouseEnter={() => setHoverRating(value)} onFocus={() => setHoverRating(value)} onBlur={() => setHoverRating(0)} disabled={busy} aria-label={`Rate ${value} out of 5`} aria-checked={rating === value} role="radio" className={`rounded-md p-1 transition-all duration-100 ${value <= activeRating ? 'scale-105 text-[#ffb02e]' : 'text-[#c5d8e2] hover:text-[#ffb02e]'}`}><Star size={27} fill={value <= activeRating ? 'currentColor' : 'none'} strokeWidth={1.9} /></button>)}
           </div>
           <div className="mt-3 grid gap-2">
-            <button type="button" onClick={() => togglePreference('recommend')} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${recommend ? 'border-[#7ed1df] bg-[#e9f9fc] text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`} aria-pressed={recommend}><span>Recommend it</span><ThumbsUp size={14} className={recommend ? 'fill-current' : ''} /></button>
-            <button type="button" onClick={() => togglePreference('watched')} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${watched ? 'border-[#7ed1df] bg-[#e9f9fc] text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`} aria-pressed={watched}><span>I watched it</span><Eye size={14} className={watched ? 'fill-current' : ''} /></button>
+            <button type="button" onClick={() => togglePreference('recommend')} disabled={busy || !rating} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${recommend ? 'border-[#7ed1df] bg-[#e9f9fc] text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`} aria-pressed={recommend} title={!rating ? 'Rate this title first' : undefined}><span className="flex items-center gap-2"><span>Recommend it</span><span className="tabular-nums opacity-80">{recommendationCount}</span></span><ThumbsUp size={14} className={recommend ? 'fill-current' : ''} /></button>
+            <button type="button" onClick={() => togglePreference('watched')} disabled={busy || !rating} className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${watched ? 'border-[#7ed1df] bg-[#e9f9fc] text-[#168aad]' : 'border-[#d8edf3] bg-transparent text-[#7891a3]'}`} aria-pressed={watched} title={!rating ? 'Rate this title first' : undefined}><span className="flex items-center gap-2"><span>I watched it</span><span className="tabular-nums opacity-80">{watchedCount}</span></span><Eye size={14} className={watched ? 'fill-current' : ''} /></button>
           </div>
           <p className="mt-3 text-[10px] leading-4 text-[#8aa0ae]">This community score is separate from the TMDB rating shown on the title page and in search.</p>
         </div>
