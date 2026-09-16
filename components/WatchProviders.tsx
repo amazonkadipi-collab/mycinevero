@@ -90,7 +90,7 @@ export default function WatchProviders({ results, defaultRegion = 'US' }: { resu
           <ProviderRow title="Rent" providers={data.rent} />
           <ProviderRow title="Buy" providers={data.buy} />
           {data.link && <a href={data.link} target="_blank" rel="noreferrer" className="inline-flex rounded-full bg-[#168aad] px-4 py-2 text-xs font-black text-white hover:bg-[#12758f]">View watch options</a>}
-          <p className="text-[10px] text-[#8aa0ae]">Streaming data provided by JustWatch.</p>
+          <p className="text-[10px] text-[#8aa0ae]">Streaming data provided by <a href="https://www.justwatch.com" target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-[#607b8e]">JustWatch</a>.</p>
         </div>
       </div>
     </section>
