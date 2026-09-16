@@ -1,3 +1,5 @@
+import { cache } from 'react';
+
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 export type TmdbMediaType = 'movie' | 'tv';
@@ -66,7 +68,11 @@ export async function tmdbAnimeHome() {
   return { results: [...tv.results.map(x => ({...x, media_type:'tv' as const})), ...movie.results.map(x => ({...x, media_type:'movie' as const}))].sort((a,b)=>(b.popularity||0)-(a.popularity||0)).slice(0,12) };
 }
 export async function tmdbSearch(query:string,page=1) { return tmdbFetch<{results:TmdbTitle[];total_pages:number;total_results:number}>('/search/multi',{query,include_adult:'false',language:'en-US',page}); }
-export async function tmdbDetails(type:TmdbMediaType,id:number) { return tmdbFetch<TmdbTitle>(`/${type}/${id}`,{language:'en-US',append_to_response:'credits,external_ids,videos,recommendations,watch/providers'},21600); }
+
+export const tmdbDetails = cache(async function tmdbDetails(type: TmdbMediaType, id: number) {
+  return tmdbFetch<TmdbTitle>(`/${type}/${id}`,{language:'en-US',append_to_response:'credits,external_ids,videos,recommendations,watch/providers'},86400);
+});
+
 export async function tmdbGenres(type:TmdbMediaType) { return tmdbFetch<{genres:{id:number;name:string}[]}>(`/genre/${type}/list`,{language:'en-US'},86400); }
 export async function tmdbDiscover(type:TmdbMediaType,page=1,options:{genreId?:number|string;runtimeMax?:number;voteAverageMin?:number;sortBy?:string}|number={}) { const filters=typeof options==='number'?{genreId:options}:{...options}; return tmdbFetch<{results:TmdbTitle[];total_pages:number}>(`/discover/${type}`,{language:'en-US',include_adult:'false',include_video:'false',sort_by:filters.sortBy||'popularity.desc',page,with_genres:filters.genreId,with_runtime_lte:type==='movie'?filters.runtimeMax:undefined,vote_average_gte:filters.voteAverageMin}); }
 export async function tmdbSeason(seriesId:number,seasonNumber:number) { return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`,{language:'en-US'},21600); }
