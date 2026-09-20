@@ -8,9 +8,10 @@ export const revalidate = 3600;
 
 const GENRES = ['action', 'adventure', 'animation', 'comedy', 'crime', 'documentary', 'drama', 'family', 'fantasy', 'horror', 'mystery', 'romance', 'science-fiction', 'thriller', 'western'];
 const GUIDES = ['how-to-choose-a-movie-by-mood', 'what-to-watch-when-you-have-90-minutes', 'movie-or-tv-series', 'how-cinevero-recommendations-work', 'how-to-find-a-good-movie-without-scrolling-forever'];
-const DISCOVER_PAGES = 5;
-const MAX_DETAIL_CANDIDATES = 120;
-const DETAIL_CONCURRENCY = 8;
+const DISCOVER_PAGES = 10;
+const MAX_DETAIL_CANDIDATES = 300;
+const DETAIL_CONCURRENCY = 10;
+const ANIME_SITEMAP_PAGES = 10;
 type TmdbList = { results: TmdbTitle[] };
 type DiscoverList = { results: TmdbTitle[]; total_pages: number };
 function titleOf(item: TmdbTitle, type: TmdbMediaType) { return type === 'tv' ? item.name || item.original_name || 'series' : item.title || item.original_title || 'movie'; }
@@ -40,15 +41,38 @@ async function filterIndexableDetails(items: TmdbTitle[], type: TmdbMediaType) {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const emptyList: TmdbList = { results: [] }; const emptyDiscover: DiscoverList = { results: [], total_pages: 0 };
-  const [trending, popularMovies, popularSeries, nowPlaying, upcoming, ...discoverPages] = await Promise.all([
-    safe(tmdbTrending('all', 'week'), emptyList), safe(tmdbPopular('movie'), emptyList), safe(tmdbPopular('tv'), emptyList), safe(tmdbNowPlaying(), emptyList), safe(tmdbUpcoming(), emptyList),
-    ...Array.from({ length: DISCOVER_PAGES }, (_, index) => Promise.all([safe(tmdbDiscover('movie', index + 1), emptyDiscover), safe(tmdbDiscover('tv', index + 1), emptyDiscover)])),
+  const [trending, popularMovies, popularSeries, nowPlaying, upcoming, ...discoverAndAnimePages] = await Promise.all([
+    safe(tmdbTrending('all', 'week'), emptyList),
+    safe(tmdbPopular('movie'), emptyList),
+    safe(tmdbPopular('tv'), emptyList),
+    safe(tmdbNowPlaying(), emptyList),
+    safe(tmdbUpcoming(), emptyList),
+    ...Array.from({ length: DISCOVER_PAGES }, (_, index) =>
+      Promise.all([
+        safe(tmdbDiscover('movie', index + 1), emptyDiscover),
+        safe(tmdbDiscover('tv', index + 1), emptyDiscover),
+      ])
+    ),
+    ...Array.from({ length: ANIME_SITEMAP_PAGES }, (_, index) =>
+      Promise.all([
+        safe(tmdbAnime('movie', index + 1), emptyDiscover),
+        safe(tmdbAnime('tv', index + 1), emptyDiscover),
+      ])
+    ),
   ]);
-  const discoverMovies = discoverPages.flatMap((pair) => pair[0].results); const discoverSeries = discoverPages.flatMap((pair) => pair[1].results);
+  const discoverPages = discoverAndAnimePages.slice(0, DISCOVER_PAGES);
+  const animePages = discoverAndAnimePages.slice(DISCOVER_PAGES);
+  const discoverMovies = discoverPages.flatMap((pair) => pair[0].results);
+  const discoverSeries = discoverPages.flatMap((pair) => pair[1].results);
+  const animeMovies = animePages.flatMap((pair) => pair[0].results);
+  const animeSeries = animePages.flatMap((pair) => pair[1].results);
   const trendingMovies = trending.results.filter((item) => item.media_type === 'movie'); const trendingSeries = trending.results.filter((item) => item.media_type === 'tv');
-  const movieCandidates = [...popularMovies.results, ...nowPlaying.results, ...upcoming.results, ...discoverMovies, ...trendingMovies];
-  const seriesCandidates = [...popularSeries.results, ...discoverSeries, ...trendingSeries];
-  const [movieEntries, seriesEntries] = await Promise.all([filterIndexableDetails(movieCandidates, 'movie'), filterIndexableDetails(seriesCandidates, 'tv')]);
+  const movieCandidates = [...popularMovies.results, ...nowPlaying.results, ...upcoming.results, ...discoverMovies, ...animeMovies, ...trendingMovies];
+  const seriesCandidates = [...popularSeries.results, ...discoverSeries, ...animeSeries, ...trendingSeries];
+  const [movieEntries, seriesEntries] = await Promise.all([
+    filterIndexableDetails(movieCandidates, 'movie'),
+    filterIndexableDetails(seriesCandidates, 'tv'),
+  ]);
   const unique = new Map([...movieEntries, ...seriesEntries].map((entry) => [entry.url, entry]));
   return [
     { url: SITE_URL, changeFrequency: 'daily' as const, priority: 1 },
@@ -58,6 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...GUIDES.map((slug) => ({ url: `${SITE_URL}/guides/${slug}`, changeFrequency: 'monthly' as const, priority: 0.8 })),
     { url: `${SITE_URL}/movie`, changeFrequency: 'daily' as const, priority: 0.8 },
     { url: `${SITE_URL}/series`, changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${SITE_URL}/anime`, changeFrequency: 'daily' as const, priority: 0.85 },
     ...GENRES.map((slug) => ({ url: `${SITE_URL}/genre/${slug}`, changeFrequency: 'weekly' as const, priority: 0.6 })),
     ...Array.from(unique.values()),
   ];
