@@ -14,17 +14,6 @@ type TmdbList = { results: TmdbTitle[] };
 type DiscoverList = { results: TmdbTitle[]; total_pages: number };
 function titleOf(item: TmdbTitle, type: TmdbMediaType) { return type === 'tv' ? item.name || item.original_name || 'series' : item.title || item.original_title || 'movie'; }
 function urlFor(item: TmdbTitle, type: TmdbMediaType) { return `${SITE_URL}/${type === 'tv' ? 'series' : 'movie'}/${slugify(titleOf(item, type))}-${item.id}`; }
-function isIndexableDetail(item: TmdbTitle, type: TmdbMediaType) {
-  const result = evaluateQualityGate({
-    title: titleOf(item, type), overview: item.overview, posterPath: item.poster_path,
-    genres: item.genres, castCount: item.credits?.cast?.length,
-    seasonCount: item.number_of_seasons ?? item.seasons?.length,
-    episodeCount: item.number_of_episodes ?? item.seasons?.reduce((sum, season) => sum + Number(season.episode_count || 0), 0),
-    trailerAvailable: Boolean(item.videos?.results?.some((video) => video.site === 'YouTube' && video.key)),
-    recommendationCount: item.recommendations?.results?.length,
-  });
-  return result.indexable;
-}
 async function safe<T>(request: Promise<T>, fallback: T): Promise<T> { try { return await request; } catch { return fallback; } }
 function catalogEntries(items: TmdbTitle[], type: TmdbMediaType) {
   const unique = Array.from(new Map(items.filter((item) => Number.isInteger(item.id)).map((item) => [item.id, item])).values()).slice(0, MAX_CATALOG_URLS_PER_TYPE);
