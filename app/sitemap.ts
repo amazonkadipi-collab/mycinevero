@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { evaluateQualityGate } from '@/lib/quality-gate';
-import { slugify, tmdbDetails, tmdbDiscover, tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming, type TmdbMediaType, type TmdbTitle } from '@/lib/tmdb';
+import { slugify, tmdbAnime, tmdbDetails, tmdbDiscover, tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming, type TmdbMediaType, type TmdbTitle } from '@/lib/tmdb';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 export const dynamic = 'force-static';
@@ -8,10 +8,9 @@ export const revalidate = 3600;
 
 const GENRES = ['action', 'adventure', 'animation', 'comedy', 'crime', 'documentary', 'drama', 'family', 'fantasy', 'horror', 'mystery', 'romance', 'science-fiction', 'thriller', 'western'];
 const GUIDES = ['how-to-choose-a-movie-by-mood', 'what-to-watch-when-you-have-90-minutes', 'movie-or-tv-series', 'how-cinevero-recommendations-work', 'how-to-find-a-good-movie-without-scrolling-forever'];
-const DISCOVER_PAGES = 10;
-const MAX_DETAIL_CANDIDATES = 300;
-const DETAIL_CONCURRENCY = 10;
-const ANIME_SITEMAP_PAGES = 10;
+const DISCOVER_PAGES = 25;
+const ANIME_SITEMAP_PAGES = 25;
+const MAX_CATALOG_URLS_PER_TYPE = 1000;
 type TmdbList = { results: TmdbTitle[] };
 type DiscoverList = { results: TmdbTitle[]; total_pages: number };
 function titleOf(item: TmdbTitle, type: TmdbMediaType) { return type === 'tv' ? item.name || item.original_name || 'series' : item.title || item.original_title || 'movie'; }
@@ -28,15 +27,9 @@ function isIndexableDetail(item: TmdbTitle, type: TmdbMediaType) {
   return result.indexable;
 }
 async function safe<T>(request: Promise<T>, fallback: T): Promise<T> { try { return await request; } catch { return fallback; } }
-async function filterIndexableDetails(items: TmdbTitle[], type: TmdbMediaType) {
-  const unique = Array.from(new Map(items.filter((item) => Number.isInteger(item.id)).map((item) => [item.id, item])).values()).slice(0, MAX_DETAIL_CANDIDATES);
-  const approved: TmdbTitle[] = [];
-  for (let start = 0; start < unique.length; start += DETAIL_CONCURRENCY) {
-    const batch = unique.slice(start, start + DETAIL_CONCURRENCY);
-    const results = await Promise.all(batch.map((item) => safe(tmdbDetails(type, item.id), null)));
-    results.forEach((detail) => { if (detail && isIndexableDetail(detail, type)) approved.push(detail); });
-  }
-  return approved.map((item) => ({ url: urlFor(item, type), changeFrequency: 'weekly' as const, priority: 0.7 }));
+function catalogEntries(items: TmdbTitle[], type: TmdbMediaType) {
+  const unique = Array.from(new Map(items.filter((item) => Number.isInteger(item.id)).map((item) => [item.id, item])).values()).slice(0, MAX_CATALOG_URLS_PER_TYPE);
+  return unique.map((item) => ({ url: urlFor(item, type), changeFrequency: 'weekly' as const, priority: 0.7 }));
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -69,10 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const trendingMovies = trending.results.filter((item) => item.media_type === 'movie'); const trendingSeries = trending.results.filter((item) => item.media_type === 'tv');
   const movieCandidates = [...popularMovies.results, ...nowPlaying.results, ...upcoming.results, ...discoverMovies, ...animeMovies, ...trendingMovies];
   const seriesCandidates = [...popularSeries.results, ...discoverSeries, ...animeSeries, ...trendingSeries];
-  const [movieEntries, seriesEntries] = await Promise.all([
-    filterIndexableDetails(movieCandidates, 'movie'),
-    filterIndexableDetails(seriesCandidates, 'tv'),
-  ]);
+  const movieEntries = catalogEntries(movieCandidates, 'movie');
+  const seriesEntries = catalogEntries(seriesCandidates, 'tv');
   const unique = new Map([...movieEntries, ...seriesEntries].map((entry) => [entry.url, entry]));
   return [
     { url: SITE_URL, changeFrequency: 'daily' as const, priority: 1 },
