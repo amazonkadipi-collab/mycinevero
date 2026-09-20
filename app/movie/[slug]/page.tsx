@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Star, Clock, ExternalLink, Play, Sparkles } from 'lucide-react';
 import { slugify, tmdbDetails, tmdbImage } from '@/lib/tmdb';
 import CineveroCommunity from '@/components/CineveroCommunity';
@@ -27,6 +27,8 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
   const { slug } = await params; const id = parseId(slug); if (!Number.isFinite(id)) notFound();
   let movie: any; try { movie = await tmdbDetails('movie', id); } catch { notFound(); }
   const title = titleOf(movie); const year = (movie.release_date || '').slice(0, 4);
+  const canonicalSlug = `${slugify(title)}-${id}`;
+  if (slug !== canonicalSlug) permanentRedirect(`/movie/${canonicalSlug}`);
   const rating = typeof movie.vote_average === 'number' && movie.vote_average > 0 ? movie.vote_average.toFixed(1) : 'N/A';
   const trailer = (movie.videos?.results || []).find((video: any) => video.site === 'YouTube' && video.type === 'Trailer' && video.official !== false) || (movie.videos?.results || []).find((video: any) => video.site === 'YouTube' && video.type === 'Trailer');
   const recommendations = (movie.recommendations?.results || []).filter((item: any) => item.poster_path).slice(0, 12);
