@@ -44,7 +44,7 @@ export default function SiteHeader() {
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#d9edf4] bg-white/95 text-[#17324d] shadow-[0_3px_18px_rgba(22,138,173,.08)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0e0e1d]/90 text-white shadow-[0_8px_30px_rgba(0,0,0,.22)] backdrop-blur-xl">
       <div className="mx-auto flex min-h-16 max-w-[1180px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button
           type="button"
@@ -56,21 +56,21 @@ export default function SiteHeader() {
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <Link href="/" aria-label="Cinevero home" className="shrink-0 text-[22px] font-black tracking-[-.08em] text-[#17324d]">
+        <Link href="/" aria-label="Cinevero home" className="shrink-0 text-[22px] font-black tracking-[-.08em] text-white">
           CINE<span className="text-[#168aad]">VERO</span><span className="ml-1 text-[10px] align-top text-[#ff6b4a]">✦</span>
         </Link>
 
         <form onSubmit={submit} role="search" className="ml-5 hidden max-w-[330px] flex-1 md:flex">
           <label className="sr-only" htmlFor="site-search">Search movies and series</label>
-          <div className="flex w-full overflow-hidden rounded-xl border border-[#d9edf4] bg-[#f7fcff] focus-within:border-[#168aad] focus-within:ring-2 focus-within:ring-[#168aad]/10">
+          <div className="flex w-full overflow-hidden rounded-xl border border-white/10 bg-white/[.06] focus-within:border-[#8d68ff] focus-within:ring-2 focus-within:ring-[#8d68ff]/10">
             <input
               id="site-search"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search movies & series"
-              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-[#17324d] outline-none placeholder:text-[#7891a3]"
+              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-white outline-none placeholder:text-[#77738a]"
             />
-            <button type="submit" aria-label="Search" className="px-3.5 text-[#168aad] hover:bg-[#168aad] hover:text-white">
+            <button type="submit" aria-label="Search" className="px-3.5 text-[#a58cff] hover:bg-[#7751ff] hover:text-white">
               <Search size={16} />
             </button>
           </div>
@@ -82,23 +82,23 @@ export default function SiteHeader() {
               key={link.href}
               href={link.href}
               aria-current={isActive(link.href) ? 'page' : undefined}
-              className={`rounded-xl px-3 py-2 ${isActive(link.href) ? 'bg-[#e7f7fb] text-[#168aad]' : 'text-[#6b879c] hover:bg-[#f0fafc] hover:text-[#17324d]'}`}
+              className={`rounded-xl px-3 py-2 ${isActive(link.href) ? 'bg-[#7751ff]/15 text-[#b8aaff]' : 'text-[#9b98ad] hover:bg-white/10 hover:text-white'}`}
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <Link href="/search" aria-label="Search" className="ml-auto rounded-xl p-2 text-[#6b879c] hover:bg-[#edf8fb] hover:text-[#168aad] md:hidden">
+        <Link href="/search" aria-label="Search" className="ml-auto rounded-xl p-2 text-[#9b98ad] hover:bg-white/10 hover:text-white md:hidden">
           <Search size={19} />
         </Link>
-        <Link href="/notifications" aria-label="Notifications" className="hidden rounded-xl p-2 text-[#6b879c] hover:bg-[#edf8fb] hover:text-[#168aad] sm:block">
+        <Link href="/notifications" aria-label="Notifications" className="hidden rounded-xl p-2 text-[#9b98ad] hover:bg-white/10 hover:text-white sm:block">
           <Bell size={18} />
         </Link>
       </div>
 
       {open && (
-        <div id="cinevero-mobile-nav" className="border-t border-[#d9edf4] bg-white px-4 py-3 md:hidden">
+        <div id="cinevero-mobile-nav" className="border-t border-white/10 bg-[#121122] px-4 py-3 md:hidden">
           <nav className="grid gap-1 text-sm font-bold">
             {links.map(link => (
               <Link
@@ -106,12 +106,12 @@ export default function SiteHeader() {
                 onClick={() => setOpen(false)}
                 href={link.href}
                 aria-current={isActive(link.href) ? 'page' : undefined}
-                className={`rounded-xl px-3 py-3 ${isActive(link.href) ? 'bg-[#e7f7fb] text-[#168aad]' : 'text-[#6b879c] hover:bg-[#f0fafc] hover:text-[#17324d]'}`}
+                className={`rounded-xl px-3 py-3 ${isActive(link.href) ? 'bg-[#7751ff]/15 text-[#b8aaff]' : 'text-[#9b98ad] hover:bg-white/10 hover:text-white'}`}
               >
                 {link.label}
               </Link>
             ))}
-            <Link onClick={() => setOpen(false)} href="/search" className="rounded-xl px-3 py-3 text-[#6b879c] hover:bg-[#f0fafc] hover:text-[#17324d]">
+            <Link onClick={() => setOpen(false)} href="/search" className="rounded-xl px-3 py-3 text-[#9b98ad] hover:bg-white/10 hover:text-white">
               Search
             </Link>
           </nav>
