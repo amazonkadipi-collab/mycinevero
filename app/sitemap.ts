@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { evaluateQualityGate } from '@/lib/quality-gate';
-import { slugify, tmdbAnime, tmdbDetails, tmdbDiscover, tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming, type TmdbMediaType, type TmdbTitle } from '@/lib/tmdb';
+import { slugify, tmdbAnime, tmdbDiscover, tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming, type TmdbMediaType, type TmdbTitle } from '@/lib/tmdb';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 export const dynamic = 'force-static';
