@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Star, Clock, ExternalLink, Sparkles, Heart } from 'lucide-react';
 import { slugify, tmdbDetails, tmdbImage, tmdbSeason } from '@/lib/tmdb';
 import CineveroCommunity from '@/components/CineveroCommunity';
@@ -26,8 +26,9 @@ function trailerOf(show: any) {
     || videos.find((video: any) => video.site === 'YouTube' && video.type === 'Trailer');
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ season?: string; page?: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  const { season, page } = await searchParams;
   const id = parseId(slug);
   if (!Number.isFinite(id)) return { title: 'Series not found', robots: { index: false, follow: true } };
 
@@ -52,9 +53,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const canonical = `${SITE_URL}/series/${slug}`;
 
     return {
+      robots: season || page ? { index: false, follow: true } : (gate.indexable ? { index: true, follow: true } : { index: false, follow: true }),
       title: `${title}${year ? ` (${year})` : ''} – Cast, Seasons, Episodes & Details`,
       description,
-      robots: gate.indexable ? { index: true, follow: true } : { index: false, follow: true },
       alternates: { canonical },
       openGraph: {
         title: `${title} | Cinevero`,
@@ -87,6 +88,8 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
 
   const title = titleOf(show);
   const year = (show.first_air_date || '').slice(0, 4);
+  const canonicalSlug = `${slugify(title)}-${id}`;
+  if (slug !== canonicalSlug) permanentRedirect(`/series/${canonicalSlug}`);
   const genres = (show.genres || []).map((genre: any) => genre.name);
   const seasons = (show.seasons || []).filter((season: any) => season.season_number > 0);
   const requestedSeason = Number(seasonParam);
