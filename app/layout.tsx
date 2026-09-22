@@ -3,14 +3,12 @@ import './globals.css';
 import LegalFooter from '@/components/LegalFooter';
 import SiteHeader from '@/components/SiteHeader';
 import VercelAnalyticsScript from '@/components/VercelAnalyticsScript';
-import VignetteAd from '@/components/VignetteAd';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const BING_SITE_VERIFICATION = '84783D6C29D7BA1FE3D5503CF8ABF55D';
 const YANDEX_SITE_VERIFICATION = '512bbf7efb34a7ed';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 const ADSENSE_ACCOUNT = 'ca-pub-2298621556332463';
-const MONETAG_SITE_ID = '057cd6503f2f1a010d02b22b8f61b95f';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -36,7 +34,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta name="google-adsense-account" content={ADSENSE_ACCOUNT} />
-        <meta name="monetag" content={MONETAG_SITE_ID} />
         <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}`}
@@ -47,7 +44,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <VercelAnalyticsScript />
         <SiteHeader />
         {children}
-        <VignetteAd />
         <LegalFooter />
       </body>
     </html>
