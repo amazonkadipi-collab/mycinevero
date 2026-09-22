@@ -57,8 +57,9 @@ export function evaluateQualityGate(input: QualityGateInput): QualityGateResult 
   if (!seasonsOrEpisodes) reasons.push('No season/episode data');
   if (!trailerOrRecommendations) reasons.push('No trailer or recommendations');
 
-  // Index only pages with all core catalog data plus at least two independent value signals.
-  const indexable = corePassed && valueScore >= 2;
+  // Index only pages with all core catalog data plus at least three independent value signals.
+  // This keeps weak metadata-only catalogue pages out of Search and the sitemap.
+  const indexable = corePassed && valueScore >= 3;
 
   return {
     indexable,
