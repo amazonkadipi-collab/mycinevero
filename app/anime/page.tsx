@@ -13,7 +13,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const title = page > 1 ? `Anime – Page ${page}` : 'Anime Movies & Series';
   const description = 'Discover popular anime movies and series on Cinevero, with ratings, genres, cast and direct links to every title.';
   const canonical = page > 1 ? `${SITE_URL}/anime?page=${page}` : `${SITE_URL}/anime`;
-  return { title, description, alternates: { canonical }, openGraph: { title: `${title} | Cinevero`, description, url: canonical, siteName: 'Cinevero', type: 'website' }, robots: { index: page === 1, follow: true } };
+  return { title, description, alternates: { canonical }, robots: { index: page === 1, follow: true }, openGraph: { title: `${title} | Cinevero`, description, url: canonical, siteName: 'Cinevero', type: 'website' }, robots: { index: page === 1, follow: true } };
 }
 
 function titleOf(item: any) { return item.title || item.name || item.original_title || item.original_name || 'Untitled'; }
