@@ -14,6 +14,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     title: page > 1 ? `Movies – Page ${page}` : 'Movies',
     description: 'Browse movies and discover titles on Cinevero.',
     alternates: { canonical: page > 1 ? `${SITE_URL}/movie?page=${page}` : `${SITE_URL}/movie` },
+    robots: { index: page === 1, follow: true },
   };
 }
 
