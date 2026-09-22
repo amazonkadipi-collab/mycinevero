@@ -8,7 +8,7 @@ export const revalidate = 3600;
 const GENRES = ['action','adventure','animation','comedy','crime','documentary','drama','family','fantasy','horror','mystery','romance','science-fiction','thriller','western'];
 const GUIDES = ['how-to-choose-a-movie-by-mood','what-to-watch-when-you-have-90-minutes','movie-or-tv-series','how-cinevero-recommendations-work','how-to-find-a-good-movie-without-scrolling-forever'];
 const TRUST_ROUTES = ['about','guides','faq','privacy-policy','terms','dmca','contact'];
-const MAX_CATALOG_URLS_PER_TYPE = 100;
+const MAX_CATALOG_URLS_PER_TYPE = 50;
 
 type TmdbList = { results: TmdbTitle[] };
 function titleOf(item: TmdbTitle, type: TmdbMediaType) { return type === 'tv' ? item.name || item.original_name || 'series' : item.title || item.original_title || 'movie'; }
