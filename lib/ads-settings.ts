@@ -7,5 +7,5 @@ export type AdsSettings = {
 export const defaultAdsSettings: AdsSettings = {
   adsense: true,
   display300x250: true,
-  inPagePush: true,
+  inPagePush: false,
 };
