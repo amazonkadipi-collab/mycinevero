@@ -5,7 +5,6 @@ import { ArrowRight, Bell, Bookmark, ChevronLeft, CircleUserRound, Compass, Down
 import type { TmdbTitle } from '@/lib/tmdb';
 import { tmdbImage } from '@/lib/tmdb';
 import AdSenseUnit from '@/components/AdSenseUnit';
-import DisplayAd300x250 from '@/components/DisplayAd300x250';
 
 type Props = { trending: TmdbTitle[]; popularMovies: TmdbTitle[]; popularSeries: TmdbTitle[]; latestMovies: TmdbTitle[]; upcoming: TmdbTitle[]; anime: TmdbTitle[] };
 const genreLinks = [['action','Action'],['comedy','Comedy'],['crime','Crime'],['drama','Drama'],['horror','Horror'],['mystery','Mystery'],['romance','Romance'],['science-fiction','Sci-Fi'],['thriller','Thriller']];
@@ -56,7 +55,6 @@ export default function CatalogHome({ trending, popularMovies, popularSeries, la
       <Rail title="Continue watching" items={continueWatching} href="/search" icon="▶" wide />
       <AdSenseUnit />
       <Rail title="Trending now" items={trending} href="/search" icon="🔥" />
-      <DisplayAd300x250 />
       <Rail title="Popular movies" items={popularMovies} href="/movie" icon="🍿" />
       <Rail title="Popular series" items={popularSeries} href="/series" icon="📺" />
       {anime.length > 0 && <Rail title="Popular anime" items={anime} href="/anime" icon="🎌" />}
