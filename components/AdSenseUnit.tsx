@@ -6,22 +6,28 @@ const NATIVE_SRC = 'https://pl31325870.profitableratecpmnetwork.com/03019123fc56
 const NATIVE_CONTAINER_ID = 'container-03019123fc56ad60d24677c8faf7c4a1';
 
 export default function AdSenseUnit() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || loadedRef.current) return;
+    const widget = widgetRef.current;
+    const parent = widget?.parentElement;
+    if (!widget || !parent || loadedRef.current) return;
 
     loadedRef.current = true;
+
     const script = document.createElement('script');
     script.async = true;
     script.setAttribute('data-cfasync', 'false');
     script.src = NATIVE_SRC;
-    container.appendChild(script);
+
+    // Keep the Adsterra code structure intact: the container exists before
+    // the async script is inserted, and the script is a sibling of the container.
+    parent.appendChild(script);
 
     return () => {
-      container.innerHTML = '';
+      script.remove();
+      widget.innerHTML = '';
       loadedRef.current = false;
     };
   }, []);
@@ -29,7 +35,11 @@ export default function AdSenseUnit() {
   return (
     <section aria-label="Advertisement" className="cinevero-native-ad">
       <div className="cinevero-native-ad__label">Advertisement</div>
-      <div ref={containerRef} id={NATIVE_CONTAINER_ID} className="cinevero-native-ad__widget" />
+      <div
+        ref={widgetRef}
+        id={NATIVE_CONTAINER_ID}
+        className="cinevero-native-ad__widget"
+      />
     </section>
   );
 }
