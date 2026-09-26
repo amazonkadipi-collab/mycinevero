@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { ArrowRight, Bell, Bookmark, ChevronLeft, CircleUserRound, Compass, Download, Home, Play, Search, Star } from 'lucide-react';
 import type { TmdbTitle } from '@/lib/tmdb';
 import { tmdbImage } from '@/lib/tmdb';
-import AdSenseUnit from '@/components/AdSenseUnit';
 
 type Props = { trending: TmdbTitle[]; popularMovies: TmdbTitle[]; popularSeries: TmdbTitle[]; latestMovies: TmdbTitle[]; upcoming: TmdbTitle[]; anime: TmdbTitle[] };
 const genreLinks = [['action','Action'],['comedy','Comedy'],['crime','Crime'],['drama','Drama'],['horror','Horror'],['mystery','Mystery'],['romance','Romance'],['science-fiction','Sci-Fi'],['thriller','Thriller']];
@@ -53,7 +52,6 @@ export default function CatalogHome({ trending, popularMovies, popularSeries, la
 
       <section className="-mx-4 mt-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><div className="flex min-w-max gap-2">{genreLinks.map(([slugValue, name]) => <Link key={slugValue} href={`/genre/${slugValue}`} className="rounded-full border border-white/10 bg-[#17162a] px-3.5 py-2 text-[11px] font-bold text-[#aaa6b9] hover:border-[#7751ff] hover:text-white">{name}</Link>)}<Link href="/anime" className="rounded-full border border-[#7751ff]/40 bg-[#7751ff]/10 px-3.5 py-2 text-[11px] font-black text-[#b8aaff] hover:bg-[#7751ff]/20">Anime</Link></div></section>
       <Rail title="Continue watching" items={continueWatching} href="/search" icon="▶" wide />
-      <AdSenseUnit />
       <Rail title="Trending now" items={trending} href="/search" icon="🔥" />
       <Rail title="Popular movies" items={popularMovies} href="/movie" icon="🍿" />
       <Rail title="Popular series" items={popularSeries} href="/series" icon="📺" />
