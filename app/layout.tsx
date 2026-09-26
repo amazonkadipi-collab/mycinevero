@@ -3,6 +3,7 @@ import './globals.css';
 import LegalFooter from '@/components/LegalFooter';
 import SiteHeader from '@/components/SiteHeader';
 import VercelAnalyticsScript from '@/components/VercelAnalyticsScript';
+import AdSenseUnit from '@/components/AdSenseUnit';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const BING_SITE_VERIFICATION = '84783D6C29D7BA1FE3D5503CF8ABF55D';
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <VercelAnalyticsScript />
         <SiteHeader />
         {children}
+        <AdSenseUnit />
         <LegalFooter />
       </body>
     </html>
