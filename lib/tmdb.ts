@@ -117,6 +117,13 @@ export type TmdbDiscoverOptions = {
   year?: number;
   originalLanguage?: string;
   withGenres?: number | string;
+  primaryReleaseDateGte?: string;
+  primaryReleaseDateLte?: string;
+  firstAirDateGte?: string;
+  firstAirDateLte?: string;
+  voteCountGte?: number;
+  voteCountLte?: number;
+  [key: string]: string | number | undefined;
 };
 
 export async function tmdbDiscoverPage(
@@ -132,12 +139,18 @@ export async function tmdbDiscoverPage(
       include_video: 'false',
       sort_by: options.sortBy || 'popularity.desc',
       page,
-      with_genres: options.withGenres ?? options.genreId,
+      with_genres: options.withGenres ?? options.genreId ?? options.with_genres,
       with_runtime_lte: type === 'movie' ? options.runtimeMax : undefined,
-      vote_average_gte: options.voteAverageMin,
-      primary_release_year: type === 'movie' ? options.year : undefined,
-      first_air_date_year: type === 'tv' ? options.year : undefined,
-      with_original_language: options.originalLanguage,
+      vote_average_gte: options.voteAverageMin ?? options.vote_average_gte,
+      primary_release_year: type === 'movie' ? (options.year ?? options.primary_release_year) : undefined,
+      first_air_date_year: type === 'tv' ? (options.year ?? options.first_air_date_year) : undefined,
+      with_original_language: options.originalLanguage ?? options.with_original_language,
+      'primary_release_date.gte': type === 'movie' ? (options.primaryReleaseDateGte ?? options['primary_release_date.gte']) : undefined,
+      'primary_release_date.lte': type === 'movie' ? (options.primaryReleaseDateLte ?? options['primary_release_date.lte']) : undefined,
+      'first_air_date.gte': type === 'tv' ? (options.firstAirDateGte ?? options['first_air_date.gte']) : undefined,
+      'first_air_date.lte': type === 'tv' ? (options.firstAirDateLte ?? options['first_air_date.lte']) : undefined,
+      vote_count_gte: options.voteCountGte ?? options.vote_count_gte,
+      vote_count_lte: options.voteCountLte ?? options.vote_count_lte,
     },
   );
 }
