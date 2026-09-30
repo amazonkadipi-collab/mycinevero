@@ -41,7 +41,7 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 40);
+  const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 80);
   const titles = await getPendingCatalogTitles(batch);
   const runId = await startSyncRun('tmdb_catalog_enrichment', titles.length);
 
