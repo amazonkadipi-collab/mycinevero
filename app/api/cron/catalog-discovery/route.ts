@@ -54,8 +54,11 @@ async function fanOutIfNeeded(
   const cappedPages = Math.min(totalPages || 0, 500);
   if (cappedPages < 500 || shard.next_page < cappedPages) return 0;
 
-  const year = Number(shard.filters.primary_release_year ?? shard.filters.first_air_date_year);
-  if (!Number.isInteger(year)) return 0;
+  const directYear = Number(shard.filters.primary_release_year ?? shard.filters.first_air_date_year);
+  const dateFilterKey = shard.media_type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte';
+  const dateFilter = String(shard.filters[dateFilterKey] || '');
+  const year = Number.isInteger(directYear) ? directYear : Number(dateFilter.slice(0, 4));
+  if (!Number.isInteger(year) || year < 1800 || year > 2100) return 0;
 
   if (shard.shard_kind === 'year' || shard.shard_kind === 'anime_year') {
     const kind = shard.shard_kind === 'anime_year' ? 'anime_month' : 'month';
