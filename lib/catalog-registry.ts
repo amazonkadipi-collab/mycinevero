@@ -418,7 +418,7 @@ export async function createSyncShards(
   rows: Array<{
     shard_key: string;
     media_type: TmdbMediaType;
-    shard_kind: 'year' | 'language_year' | 'genre_language_year' | 'anime_year';
+    shard_kind: 'year' | 'month' | 'language_month' | 'genre_language_month' | 'vote_bucket' | 'anime_year' | 'anime_month' | 'anime_language_month';
     filters: TmdbDiscoverOptions;
     priority?: number;
   }>,
