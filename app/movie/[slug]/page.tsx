@@ -7,6 +7,7 @@ import CineveroCommunity from '@/components/CineveroCommunity';
 import WatchProviders from '@/components/WatchProviders';
 import DisplayAd300x250 from '@/components/DisplayAd300x250';
 import { evaluateQualityGate } from '@/lib/quality-gate';
+import { getCatalogDetail } from '@/lib/catalog-content';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 function parseId(slug: string) { const match = slug.match(/-(\d+)$/); return match ? Number(match[1]) : Number(slug); }
