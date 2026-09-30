@@ -125,7 +125,7 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 24);
+  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 40);
   const shards = await getSyncShards(batch);
   const runId = await startSyncRun('tmdb_catalog_discovery', shards.length);
   let pages = 0;
