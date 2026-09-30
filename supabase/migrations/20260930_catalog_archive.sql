@@ -50,7 +50,7 @@ create table if not exists public.catalog_sync_shards (
   id uuid primary key default gen_random_uuid(),
   shard_key text not null unique,
   media_type text not null check (media_type in ('movie','tv')),
-  shard_kind text not null check (shard_kind in ('year','language_year','genre_language_year','anime_year')),
+  shard_kind text not null check (shard_kind in ('year','month','language_month','genre_language_month','vote_bucket','anime_year','anime_month','anime_language_month')),
   filters jsonb not null default '{}'::jsonb,
   next_page integer not null default 1 check (next_page >= 1),
   completed boolean not null default false,
@@ -72,23 +72,23 @@ alter table public.catalog_sync_shards enable row level security;
 insert into public.catalog_sync_shards (shard_key, media_type, shard_kind, filters, priority)
 select concat('movie:year:', y), 'movie', 'year',
        jsonb_build_object('primary_release_year', y, 'sort_by', 'popularity.desc'), 80
-from generate_series(1870, 2027) as y
+from generate_series(1870, 2035) as y
 on conflict (shard_key) do nothing;
 
 insert into public.catalog_sync_shards (shard_key, media_type, shard_kind, filters, priority)
 select concat('tv:year:', y), 'tv', 'year',
        jsonb_build_object('first_air_date_year', y, 'sort_by', 'popularity.desc'), 80
-from generate_series(1870, 2027) as y
+from generate_series(1870, 2035) as y
 on conflict (shard_key) do nothing;
 
 insert into public.catalog_sync_shards (shard_key, media_type, shard_kind, filters, priority)
 select concat('movie:anime_year:', y), 'movie', 'anime_year',
        jsonb_build_object('primary_release_year', y, 'sort_by', 'popularity.desc', 'with_genres', '16', 'with_original_language', 'ja'), 90
-from generate_series(1870, 2027) as y
+from generate_series(1870, 2035) as y
 on conflict (shard_key) do nothing;
 
 insert into public.catalog_sync_shards (shard_key, media_type, shard_kind, filters, priority)
 select concat('tv:anime_year:', y), 'tv', 'anime_year',
        jsonb_build_object('first_air_date_year', y, 'sort_by', 'popularity.desc', 'with_genres', '16', 'with_original_language', 'ja'), 90
-from generate_series(1870, 2027) as y
+from generate_series(1870, 2035) as y
 on conflict (shard_key) do nothing;
