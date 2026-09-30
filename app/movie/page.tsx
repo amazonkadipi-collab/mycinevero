@@ -22,7 +22,7 @@ export default async function MoviesPage({ searchParams }: { searchParams: Promi
   const { page: pageParam } = await searchParams;
   const requested = Number(pageParam);
   const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 500) : 1;
-  const data = await tmdbDiscover('movie', page).catch(() => ({ results: [], total_pages: 0 }));
+  const data = await tmdbDiscover('movie', page).catch(() => ({ results: [], total_pages: 0, total_results: 0 }));
   const totalPages = Math.min(data.total_pages || 0, 500);
 
   return (
@@ -34,7 +34,7 @@ export default async function MoviesPage({ searchParams }: { searchParams: Promi
             <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Movies</h1>
             <p className="mt-2 text-zinc-500">Browse popular films and discover what is worth exploring.</p>
           </div>
-          <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">Page {page} of {Math.max(totalPages, 1)}</span>
+          <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">{data.total_results.toLocaleString()} movies</span>
         </div>
         <div className="mt-7 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
           <SlidersHorizontal size={16} className="text-zinc-500" aria-hidden="true" />
