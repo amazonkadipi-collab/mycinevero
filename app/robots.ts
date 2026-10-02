@@ -5,8 +5,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.ap
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: '*', allow: '/', disallow: ['/api/'] },
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/api/', '/admin/'],
+      },
       { userAgent: 'Googlebot', allow: '/' },
+      { userAgent: 'Google-Extended', allow: '/' },
       { userAgent: 'bingbot', allow: '/' },
       { userAgent: 'Yandex', allow: '/' },
       { userAgent: 'GPTBot', allow: '/' },
