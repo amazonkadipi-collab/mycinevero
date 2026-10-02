@@ -27,7 +27,7 @@ function authorized(request: Request) {
 
 function parseBatch(value: string | undefined, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 120)) : fallback;
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 100)) : fallback;
 }
 
 function pad(value: number) {
@@ -40,7 +40,11 @@ function daysInMonth(year: number, month: number) {
 
 async function ensureMaximumYearCoverage() {
   const rows = [];
-  for (let year = 1800; year <= 2100; year += 1) {
+  const years = [
+    ...Array.from({ length: 70 }, (_, i) => 1800 + i),
+    ...Array.from({ length: 65 }, (_, i) => 2036 + i),
+  ];
+  for (const year of years) {
     rows.push(
       { shard_key: `movie:year:${year}`, media_type: 'movie' as const, shard_kind: 'year' as const, priority: 80, filters: { primary_release_year: year, sort_by: 'popularity.desc' } },
       { shard_key: `tv:year:${year}`, media_type: 'tv' as const, shard_kind: 'year' as const, priority: 80, filters: { first_air_date_year: year, sort_by: 'popularity.desc' } },
@@ -141,7 +145,7 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 120);
+  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 100);
   await ensureMaximumYearCoverage();
   const shards = await getSyncShards(batch);
   const runId = await startSyncRun('tmdb_catalog_discovery', shards.length);
@@ -176,45 +180,56 @@ export async function GET(request: Request) {
     // Historical shard processing must continue even if the live frontier refresh fails.
   }
 
-  let shardCursor = 0;
-  async function processShardBatch() {
-    while (true) {
-      const index = shardCursor++;
-      if (index >= shards.length) return;
-      const shard = shards[index];
-      await lockSyncShard(shard.id);
-      const page = shard.next_page;
-      try {
-        const data = await tmdbDiscoverPage(shard.media_type, page, shard.filters);
-        const accepted = await upsertDiscoveredTitles(data.results || [], shard.media_type, shard.shard_key);
-        const maxPage = Math.min(data.total_pages || 0, 500);
-        const complete = page >= maxPage || maxPage === 0;
+  const deadline = Date.now() + 270_000;
+  let queue = shards;
 
-        discovered += accepted;
-        pages += 1;
-        fanOut += await fanOutIfNeeded(shard, data.total_pages || 0);
+  async function processShardBatch(batchShards: typeof shards) {
+    let cursor = 0;
+    async function worker() {
+      while (true) {
+        if (Date.now() >= deadline) return;
+        const index = cursor++;
+        if (index >= batchShards.length) return;
+        const shard = batchShards[index];
+        await lockSyncShard(shard.id);
+        const page = shard.next_page;
+        try {
+          const data = await tmdbDiscoverPage(shard.media_type, page, shard.filters);
+          const accepted = await upsertDiscoveredTitles(data.results || [], shard.media_type, shard.shard_key);
+          const maxPage = Math.min(data.total_pages || 0, 500);
+          const complete = page >= maxPage || maxPage === 0;
 
-        await updateSyncShard(shard.id, {
-          next_page: complete ? page : page + 1,
-          completed: complete,
-          pages_fetched: shard.pages_fetched + 1,
-          items_seen: Number(shard.items_seen || 0) + (data.results?.length || 0),
-          last_run_at: new Date().toISOString(),
-          last_error: null,
-          locked_until: null,
-        });
-      } catch (error) {
-        failed += 1;
-        await updateSyncShard(shard.id, {
-          last_run_at: new Date().toISOString(),
-          last_error: error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500),
-          locked_until: null,
-        });
+          discovered += accepted;
+          pages += 1;
+          fanOut += await fanOutIfNeeded(shard, data.total_pages || 0);
+
+          await updateSyncShard(shard.id, {
+            next_page: complete ? page : page + 1,
+            completed: complete,
+            pages_fetched: shard.pages_fetched + 1,
+            items_seen: Number(shard.items_seen || 0) + (data.results?.length || 0),
+            last_run_at: new Date().toISOString(),
+            last_error: null,
+            locked_until: null,
+          });
+        } catch (error) {
+          failed += 1;
+          await updateSyncShard(shard.id, {
+            last_run_at: new Date().toISOString(),
+            last_error: error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500),
+            locked_until: null,
+          });
+        }
       }
     }
+    await Promise.all(Array.from({ length: Math.min(6, batchShards.length) }, worker));
   }
 
-  await Promise.all(Array.from({ length: Math.min(6, shards.length) }, processShardBatch));
+  while (queue.length && Date.now() < deadline) {
+    await processShardBatch(queue);
+    if (Date.now() >= deadline) break;
+    queue = await getSyncShards(batch);
+  }
 
   await finishSyncRun(runId, {
     status: failed ? 'completed_with_errors' : 'completed',
