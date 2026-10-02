@@ -17,7 +17,8 @@ export async function GET(
 ) {
   const { category: rawCategory, part: rawPart } = await params;
   const category = rawCategory as CatalogCategory;
-  const part = Number(rawPart);
+  const partValue = rawPart.endsWith('.xml') ? rawPart.slice(0, -4) : rawPart;
+  const part = Number(partValue);
 
   if (!VALID_CATEGORIES.has(category) || !Number.isInteger(part) || part < 0 || part > 49999) {
     return new NextResponse('Not Found', { status: 404 });
