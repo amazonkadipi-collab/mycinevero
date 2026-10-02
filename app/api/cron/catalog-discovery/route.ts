@@ -12,7 +12,7 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const LANGUAGES = ['en','ja','ko','hi','fr','es','de','it','pt','zh','tr','ru','ar','te','ta','ml','mr','id','th','pl'];
 const GENRES = [28,12,16,35,80,18,27,9648,878,10749,53,36,99,10751,14,37,10402,10752];
@@ -27,7 +27,7 @@ function authorized(request: Request) {
 
 function parseBatch(value: string | undefined, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 40)) : fallback;
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 120)) : fallback;
 }
 
 function pad(value: number) {
@@ -141,7 +141,7 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 40);
+  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 120);
   await ensureMaximumYearCoverage();
   const shards = await getSyncShards(batch);
   const runId = await startSyncRun('tmdb_catalog_discovery', shards.length);
