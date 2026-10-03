@@ -21,6 +21,8 @@ const GENRES: Record<string, { name: string; movie: number; tv: number }> = {
   'science-fiction': { name: 'Science Fiction', movie: 878, tv: 10765 },
   thriller: { name: 'Thriller', movie: 53, tv: 0 },
   western: { name: 'Western', movie: 37, tv: 0 },
+  'action-adventure': { name: 'Action & Adventure', movie: 28, tv: 10759 },
+  'sci-fi-fantasy': { name: 'Sci-Fi & Fantasy', movie: 878, tv: 10765 },
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
