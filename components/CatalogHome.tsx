@@ -13,6 +13,7 @@ function ratingOf(item: TmdbTitle) { return typeof item.vote_average === 'number
 function slug(value: string, id: number) { return `${value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-${id}`; }
 
 function PosterCard({ item, wide = false }: { item: TmdbTitle; wide?: boolean }) {
+  if (!Number.isFinite(item.id) || item.id <= 0) return null;
   const type = item.media_type === 'tv' || item.name ? 'series' : 'movie';
   const title = titleOf(item);
   return <Link href={`/${type}/${slug(title, item.id)}`} className={`group block shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400 ${wide ? 'w-[210px] sm:w-[240px]' : 'w-[132px] sm:w-[160px]'}`}>
@@ -32,7 +33,7 @@ function Rail({ title, items, href, icon, wide = false }: { title: string; items
 }
 
 export default function CatalogHome({ trending, popularMovies, popularSeries, latestMovies, upcoming, anime }: Props) {
-  const featured = trending[0] || popularMovies[0];
+  const featured = [...trending, ...popularMovies].find(item => Number.isFinite(item.id) && item.id > 0);
   const featuredType = featured?.media_type === 'tv' || featured?.name ? 'series' : 'movie';
   const featuredHref = featured ? `/${featuredType}/${slug(titleOf(featured), featured.id)}` : '/movie';
   const continueWatching = trending.slice(1, 5).length ? trending.slice(1, 5) : popularMovies.slice(0, 4);
