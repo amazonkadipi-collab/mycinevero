@@ -44,8 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <VercelAnalyticsScript />
         <SiteHeader />
-        {children}
         <AdSenseUnit />
+        {children}
         <LegalFooter />
       </body>
     </html>
