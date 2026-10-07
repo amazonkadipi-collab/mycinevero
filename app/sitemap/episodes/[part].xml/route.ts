@@ -28,7 +28,7 @@ export async function GET(
 ${rows.map(row => {
     const url = `${SITE_URL}/series/${row.slug}/season/${row.season}/episode/${row.episode}`;
     return `  <url><loc>${xml(url)}</loc><lastmod>${xml(new Date(row.updated_at).toISOString())}</lastmod></url>`;
-  }).join('\\n')}
+  }).join('\n')}
 </urlset>`;
 
   return new NextResponse(body, {
