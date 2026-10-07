@@ -315,6 +315,95 @@ function categoryFilters(category: CatalogCategory) {
   return { anime: true };
 }
 
+const SITEMAP_EPISODE_PAGE_SIZE = 1000;
+
+type EpisodeSitemapSeries = {
+  id: string;
+  slug: string;
+  seasons: Array<{ season_number?: number; episode_count?: number }> | null;
+  updated_at: string;
+};
+
+async function getEpisodeSitemapSeries(offset: number) {
+  const params = new URLSearchParams({
+    select: 'id,slug,raw->seasons,updated_at',
+    indexable: 'eq.true',
+    quality_state: 'eq.ready',
+    media_type: 'eq.tv',
+    order: 'id.asc',
+    offset: String(offset),
+    limit: '1000',
+  });
+
+  const { data } = await supabaseRequest<EpisodeSitemapSeries[]>(`titles?${params.toString()}`);
+  return data || [];
+}
+
+export async function countCatalogEpisodeSitemap() {
+  let offset = 0;
+  let total = 0;
+
+  while (true) {
+    const rows = await getEpisodeSitemapSeries(offset);
+    if (!rows.length) break;
+    for (const row of rows) {
+      for (const season of row.seasons || []) {
+        const seasonNumber = Number(season.season_number);
+        const episodeCount = Number(season.episode_count || 0);
+        if (Number.isInteger(seasonNumber) && seasonNumber > 0 && episodeCount > 0) {
+          total += episodeCount;
+        }
+      }
+    }
+    if (rows.length < 1000) break;
+    offset += rows.length;
+  }
+
+  return total;
+}
+
+export async function getCatalogEpisodeSitemapRows(part: number) {
+  const targetStart = part * SITEMAP_EPISODE_PAGE_SIZE;
+  const targetEnd = targetStart + SITEMAP_EPISODE_PAGE_SIZE;
+  const rows: Array<{
+    slug: string;
+    season: number;
+    episode: number;
+    updated_at: string;
+  }> = [];
+
+  let offset = 0;
+  let cursor = 0;
+
+  while (cursor < targetEnd) {
+    const seriesRows = await getEpisodeSitemapSeries(offset);
+    if (!seriesRows.length) break;
+
+    for (const row of seriesRows) {
+      for (const season of row.seasons || []) {
+        const seasonNumber = Number(season.season_number);
+        const episodeCount = Number(season.episode_count || 0);
+        if (!Number.isInteger(seasonNumber) || seasonNumber < 1 || episodeCount < 1) continue;
+
+        for (let episode = 1; episode <= episodeCount; episode += 1) {
+          if (cursor >= targetStart && cursor < targetEnd) {
+            rows.push({ slug: row.slug, season: seasonNumber, episode, updated_at: row.updated_at });
+          }
+          cursor += 1;
+          if (cursor >= targetEnd) break;
+        }
+        if (cursor >= targetEnd) break;
+      }
+      if (cursor >= targetEnd) break;
+    }
+
+    if (seriesRows.length < 1000) break;
+    offset += seriesRows.length;
+  }
+
+  return rows;
+}
+
 export async function countCatalogSitemap(category: CatalogCategory) {
   const filters = categoryFilters(category);
   const params = new URLSearchParams({
