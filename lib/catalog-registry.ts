@@ -425,13 +425,25 @@ export async function createSyncShards(
 ) {
   if (!rows.length) return 0;
 
-  await supabaseRequest('catalog_sync_shards', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify(rows),
+  // Fan-out can be reached repeatedly by concurrent workers. Deduplicate the
+  // request itself, then make the conflict target explicit so existing shards
+  // are harmless instead of aborting the whole discovery cron.
+  const uniqueRows = Array.from(
+    new Map(rows.map(row => [row.shard_key, row])).values(),
+  );
+  if (!uniqueRows.length) return 0;
+
+  const query = new URLSearchParams({
+    on_conflict: 'shard_key',
   });
 
-  return rows.length;
+  await supabaseRequest(`catalog_sync_shards?${query.toString()}`, {
+    method: 'POST',
+    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    body: JSON.stringify(uniqueRows),
+  });
+
+  return uniqueRows.length;
 }
 
 export async function startSyncRun(source: string, requestedCount = 0) {
