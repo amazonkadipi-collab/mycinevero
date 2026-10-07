@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { countCatalogSitemap, type CatalogCategory } from '@/lib/catalog-registry';
+import { countCatalogEpisodeSitemap, countCatalogSitemap, type CatalogCategory } from '@/lib/catalog-registry';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 const CATEGORIES: CatalogCategory[] = ['movies', 'series', 'anime'];
@@ -12,7 +12,10 @@ function xml(value: string) {
 }
 
 export async function GET() {
-  const counts = await Promise.all(CATEGORIES.map(async category => ({ category, count: await countCatalogSitemap(category) })));
+  const [counts, episodeCount] = await Promise.all([
+    Promise.all(CATEGORIES.map(async category => ({ category, count: await countCatalogSitemap(category) }))),
+    countCatalogEpisodeSitemap(),
+  ]);
 
   const entries = [
     `  <sitemap><loc>${xml(`${SITE_URL}/sitemap-static.xml`)}</loc></sitemap>`,
@@ -22,6 +25,9 @@ export async function GET() {
         `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/${category}/${part}.xml`)}</loc></sitemap>`,
       );
     }),
+    ...Array.from({ length: Math.ceil(episodeCount / 1000) }, (_, part) =>
+      `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/episodes/${part}.xml`)}</loc></sitemap>`,
+    ),
   ];
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
