@@ -10,6 +10,9 @@ import { evaluateQualityGate } from '@/lib/quality-gate';
 import { getCatalogDetail } from '@/lib/catalog-content';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
+
+// Movie detail content changes slowly; ISR keeps SEO pages crawlable while reducing origin work.
+export const revalidate = 21600;
 function parseId(slug: string) { const match = slug.match(/-(\d+)$/); return match ? Number(match[1]) : Number(slug); }
 function titleOf(item: any) { return item.title || item.name || item.original_title || item.original_name || 'Untitled'; }
 
