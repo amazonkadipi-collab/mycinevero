@@ -27,6 +27,8 @@ const GENRES: Record<string, { name: string; movie: number; tv: number }> = {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 
+export const revalidate = 1800;
+
 export function generateStaticParams() {
   return Object.keys(GENRES).map((slug) => ({ slug }));
 }
