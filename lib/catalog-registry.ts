@@ -418,7 +418,7 @@ export async function countCatalogSitemap(category: CatalogCategory) {
   params.set('is_anime', `eq.${filters.anime}`);
 
   const { response } = await supabaseRequest(`titles?${params.toString()}`, {
-    headers: { Prefer: 'count=exact' },
+    headers: { Prefer: 'count=estimated' },
   });
 
   return parseContentRange(response.headers.get('content-range'));
