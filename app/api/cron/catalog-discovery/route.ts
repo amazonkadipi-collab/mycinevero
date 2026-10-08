@@ -12,7 +12,7 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
+export const maxDuration = 120;
 
 const LANGUAGES = ['en','ja','ko','hi','fr','es','de','it','pt','zh','tr','ru','ar','te','ta','ml','mr','id','th','pl'];
 const GENRES = [28,12,16,35,80,18,27,9648,878,10749,53,36,99,10751,14,37,10402,10752];
@@ -145,7 +145,7 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 100);
+  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 50);
   await ensureMaximumYearCoverage();
   const shards = await getSyncShards(batch);
   const runId = await startSyncRun('tmdb_catalog_discovery', shards.length);
@@ -180,7 +180,7 @@ export async function GET(request: Request) {
     // Historical shard processing must continue even if the live frontier refresh fails.
   }
 
-  const deadline = Date.now() + 270_000;
+  const deadline = Date.now() + 105_000;
   let queue = shards;
 
   async function processShardBatch(batchShards: typeof shards) {
@@ -222,7 +222,7 @@ export async function GET(request: Request) {
         }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(6, batchShards.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(3, batchShards.length) }, worker));
   }
 
   while (queue.length && Date.now() < deadline) {
