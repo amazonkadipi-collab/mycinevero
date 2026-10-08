@@ -1,21 +1,22 @@
 import { NextResponse } from 'next/server';
-import { countCatalogEpisodeSitemap, countCatalogSitemap, type CatalogCategory } from '@/lib/catalog-registry';
+import { countCatalogSitemap, type CatalogCategory } from '@/lib/catalog-registry';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 const CATEGORIES: CatalogCategory[] = ['movies', 'series', 'anime'];
 
 export const runtime = 'nodejs';
-export const revalidate = 3600;
+export const revalidate = 21600;
 
 function xml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&apos;');
 }
 
 export async function GET() {
-  const [counts, episodeCount] = await Promise.all([
-    Promise.all(CATEGORIES.map(async category => ({ category, count: await countCatalogSitemap(category) }))),
-    countCatalogEpisodeSitemap(),
-  ]);
+  // Keep the sitemap index DB-light. Episode sitemap counting previously scanned the entire TV catalog
+  // and could hit Supabase statement timeouts. Episode shards remain available independently.
+  const counts = await Promise.all(
+    CATEGORIES.map(async category => ({ category, count: await countCatalogSitemap(category) })),
+  );
 
   const entries = [
     `  <sitemap><loc>${xml(`${SITE_URL}/sitemap-static.xml`)}</loc></sitemap>`,
@@ -25,9 +26,6 @@ export async function GET() {
         `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/${category}/${part}.xml`)}</loc></sitemap>`,
       );
     }),
-    ...Array.from({ length: Math.ceil(episodeCount / 1000) }, (_, part) =>
-      `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/episodes/${part}.xml`)}</loc></sitemap>`,
-    ),
   ];
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
@@ -38,7 +36,7 @@ ${entries.join('\n')}
   return new NextResponse(body, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=86400',
     },
   });
 }
