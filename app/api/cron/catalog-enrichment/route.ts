@@ -10,7 +10,7 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
+export const maxDuration = 120;
 
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
@@ -41,8 +41,8 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 100);
-  const deadline = Date.now() + 270_000;
+  const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 50);
+  const deadline = Date.now() + 105_000;
   let requested = 0;
   const runId = await startSyncRun('tmdb_catalog_enrichment', 0);
 
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     if (!titles.length) break;
     requested += titles.length;
 
-    await mapWithConcurrency(titles, 8, async row => {
+    await mapWithConcurrency(titles, 4, async row => {
       try {
         const detail = await tmdbDetails(row.media_type, row.tmdb_id);
         const result = await updateCatalogAfterEnrichment(row, detail);
