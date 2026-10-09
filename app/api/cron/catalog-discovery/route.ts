@@ -27,7 +27,7 @@ function authorized(request: Request) {
 
 function parseBatch(value: string | undefined, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 100)) : fallback;
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 20)) : fallback;
 }
 
 function pad(value: number) {
@@ -145,8 +145,10 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 50);
-  await ensureMaximumYearCoverage();
+  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 10);
+  // The historical shard set is stable; only reconcile it monthly instead of
+  // writing hundreds of duplicate shard candidates on every daily run.
+  if (new Date().getUTCDate() === 1) await ensureMaximumYearCoverage();
   const shards = await getSyncShards(batch);
   const runId = await startSyncRun('tmdb_catalog_discovery', shards.length);
   let pages = 0;
@@ -180,9 +182,7 @@ export async function GET(request: Request) {
     // Historical shard processing must continue even if the live frontier refresh fails.
   }
 
-  const deadline = Date.now() + 105_000;
-  let queue = shards;
-
+  const deadline = Date.now() + 25_000;
   async function processShardBatch(batchShards: typeof shards) {
     let cursor = 0;
     async function worker() {
@@ -222,14 +222,12 @@ export async function GET(request: Request) {
         }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(3, batchShards.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(2, batchShards.length) }, worker));
   }
 
-  while (queue.length && Date.now() < deadline) {
-    await processShardBatch(queue);
-    if (Date.now() >= deadline) break;
-    queue = await getSyncShards(batch);
-  }
+  // Process one bounded batch per invocation. Never drain the entire backlog in
+  // a single serverless execution; the next scheduled run continues the queue.
+  await processShardBatch(shards);
 
   await finishSyncRun(runId, {
     status: failed ? 'completed_with_errors' : 'completed',
