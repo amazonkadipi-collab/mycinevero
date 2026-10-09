@@ -12,7 +12,7 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 30;
 
 const LANGUAGES = ['en','ja','ko','hi','fr','es','de','it','pt','zh','tr','ru','ar','te','ta','ml','mr','id','th','pl'];
 const GENRES = [28,12,16,35,80,18,27,9648,878,10749,53,36,99,10751,14,37,10402,10752];
@@ -145,6 +145,7 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
+  const deadline = Date.now() + 25_000;
   const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 10);
   // The historical shard set is stable; only reconcile it monthly instead of
   // writing hundreds of duplicate shard candidates on every daily run.
@@ -182,7 +183,6 @@ export async function GET(request: Request) {
     // Historical shard processing must continue even if the live frontier refresh fails.
   }
 
-  const deadline = Date.now() + 25_000;
   async function processShardBatch(batchShards: typeof shards) {
     let cursor = 0;
     async function worker() {
