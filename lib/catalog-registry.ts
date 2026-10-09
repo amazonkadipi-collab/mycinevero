@@ -5,7 +5,7 @@ import { evaluateQualityGate } from './quality-gate';
 const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/\/$/, '');
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 const SITEMAP_PAGE_SIZE = 1000;
-const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+const STALE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type CatalogCategory = 'movies' | 'series' | 'anime';
 
