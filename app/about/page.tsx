@@ -21,7 +21,7 @@ export default function AboutPage() {
         </p>
         <h2>How our recommendations work</h2>
         <p>
-          Cinevero combines structured catalogue metadata with our own presentation and viewing guidance. Discovery lists can use signals such as popularity, genre, release timing, runtime, and related titles. The editorial guidance is written to help with a viewing decision rather than to reproduce a provider's catalogue description. Recommendations are suggestions, not guarantees that a title will match every viewer's taste.
+          Cinevero combines structured catalogue metadata with our own presentation and viewing guidance. Discovery lists can use signals such as popularity, genre, release timing, runtime, and related titles. The editorial guidance is written to help with a viewing decision rather than to reproduce a provider's catalogue description. Recommendations are suggestions, not guarantees that a title will match every viewer&apos;s taste.
         </p>
         <h2>How we approach editorial content</h2>
         <p>
@@ -29,7 +29,7 @@ export default function AboutPage() {
         </p>
         <h2>Third-party data and media</h2>
         <p>
-          Cinevero uses third-party services for selected catalogue metadata, artwork, and trailers. Third-party material remains subject to its respective provider's terms and rights. Cinevero does not claim ownership of third-party movie, TV, poster, cast, or trailer content and does not host movie or TV video files.
+          Cinevero uses third-party services for selected catalogue metadata, artwork, and trailers. Third-party material remains subject to its respective provider&apos;s terms and rights. Cinevero does not claim ownership of third-party movie, TV, poster, cast, or trailer content and does not host movie or TV video files.
         </p>
         <h2>Questions, corrections, or copyright concerns</h2>
         <p>
