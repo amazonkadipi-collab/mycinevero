@@ -42,6 +42,7 @@ export default function AdminDashboardV3() {
     catch (e) { setData({ ok: false, error: e instanceof Error ? e.message : "Analytics unavailable" }); }
     finally { setLoading(false); }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [range]);
 
   const pages = useMemo(() => {
