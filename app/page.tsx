@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { safeJsonLd } from '@/lib/jsonld';
 import CatalogHome from '@/components/CatalogHome';
 import AiSeoSignals from '@/components/AiSeoSignals';
 import { tmdbAnimeHome, tmdbNowPlaying, tmdbPopular, tmdbTrending, tmdbUpcoming, type TmdbTitle } from '@/lib/tmdb';
@@ -46,8 +47,8 @@ export default async function HomePage() {
   const organizationLd = { '@context': 'https://schema.org', '@type': 'Organization', name: 'Cinevero', url: SITE_URL };
 
   return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationLd) }} />
     <CatalogHome trending={compactHomeItems(trending.results)} popularMovies={compactHomeItems(popularMovies.results)} popularSeries={compactHomeItems(popularSeries.results.map((x) => ({ ...x, media_type: 'tv' as const })))} latestMovies={compactHomeItems(latestMovies.results.map((x) => ({ ...x, media_type: 'movie' as const })))} upcoming={compactHomeItems(upcoming.results.map((x) => ({ ...x, media_type: 'movie' as const })))} anime={compactHomeItems(anime.results)} />
     <AiSeoSignals />
   </>;

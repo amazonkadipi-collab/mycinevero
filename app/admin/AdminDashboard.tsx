@@ -70,6 +70,7 @@ export default function AdminDashboard() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [range]);
 
   const filteredPages = useMemo(() => {
