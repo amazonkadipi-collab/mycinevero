@@ -23,6 +23,7 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
       setWatched(next.mine?.watched ?? false);
     }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [tmdbId, mediaType]);
 
   async function post(body: any) {
