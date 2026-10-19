@@ -22,6 +22,10 @@ function isRateLimited(request: NextRequest) {
 
 function recordFailedAttempt(request: NextRequest) {
   const now = Date.now();
+  // Expire old keys to prevent this per-instance limiter from growing forever.
+  for (const [key, entry] of authFailures) {
+    if (entry.resetAt <= now) authFailures.delete(key);
+  }
   const key = getClientKey(request);
   const current = authFailures.get(key);
   if (!current || current.resetAt <= now) {
@@ -48,7 +52,13 @@ async function verifySession(value: string | undefined, username: string, passwo
   );
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
   const expected = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, "0")).join("");
-  return expected === parts[2];
+  // Compare fixed-length signatures without an early-exit string comparison.
+  if (parts[2].length !== expected.length) return false;
+  let difference = 0;
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |= expected.charCodeAt(index) ^ parts[2].charCodeAt(index);
+  }
+  return difference === 0;
 }
 
 export async function middleware(request: NextRequest) {
