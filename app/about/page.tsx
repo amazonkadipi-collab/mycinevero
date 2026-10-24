@@ -21,7 +21,7 @@ export default function AboutPage() {
         </p>
         <h2>How our recommendations work</h2>
         <p>
-          Cinevero combines structured catalogue metadata with our own presentation and viewing guidance. Discovery lists can use signals such as popularity, genre, release timing, runtime, and related titles. The editorial guidance is written to help with a viewing decision rather than to reproduce a provider's catalogue description. Recommendations are suggestions, not guarantees that a title will match every viewer's taste.
+          Cinevero combines structured catalogue metadata with our own presentation and viewing guidance. Discovery lists can use signals such as popularity, genre, release timing, runtime, and related titles. The editorial guidance is written to help with a viewing decision rather than to reproduce a provider&apos;s catalogue description. Recommendations are suggestions, not guarantees that a title will match every viewer&apos;s taste.
         </p>
         <h2>How we approach editorial content</h2>
         <p>
