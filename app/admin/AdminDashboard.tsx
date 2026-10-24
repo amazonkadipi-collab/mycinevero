@@ -70,7 +70,9 @@ export default function AdminDashboard() {
     }
   }
 
-  useEffect(() => { load(); }, [range]);
+  // This effect starts async analytics I/O; state updates happen when the request settles.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [range]);
 
   const filteredPages = useMemo(() => {
     const pages = analytics?.topPages || [];
