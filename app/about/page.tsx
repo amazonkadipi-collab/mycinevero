@@ -29,7 +29,7 @@ export default function AboutPage() {
         </p>
         <h2>Third-party data and media</h2>
         <p>
-          Cinevero uses third-party services for selected catalogue metadata, artwork, and trailers. Third-party material remains subject to its respective provider's terms and rights. Cinevero does not claim ownership of third-party movie, TV, poster, cast, or trailer content and does not host movie or TV video files.
+          Cinevero uses third-party services for selected catalogue metadata, artwork, and trailers. Third-party material remains subject to its respective provider&apos;s terms and rights. Cinevero does not claim ownership of third-party movie, TV, poster, cast, or trailer content and does not host movie or TV video files.
         </p>
         <h2>Questions, corrections, or copyright concerns</h2>
         <p>
