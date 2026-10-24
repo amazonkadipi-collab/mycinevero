@@ -42,7 +42,9 @@ export default function AdminDashboardV3() {
     catch (e) { setData({ ok: false, error: e instanceof Error ? e.message : "Analytics unavailable" }); }
     finally { setLoading(false); }
   }
-  useEffect(() => { load(); }, [range]);
+  // This effect starts async analytics I/O; state updates happen when the request settles.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [range]);
 
   const pages = useMemo(() => {
     const base = data?.topPages || [];
