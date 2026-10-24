@@ -5,7 +5,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.ap
 const CATEGORIES: CatalogCategory[] = ['movies', 'series', 'anime'];
 
 export const runtime = 'nodejs';
-export const revalidate = 21600;
+// The sitemap index reads live catalog counts. Keep it request-time so a build
+// without production database credentials cannot freeze an incomplete sitemap.
+export const dynamic = 'force-dynamic';
 
 function xml(value: string) {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&apos;');
@@ -18,17 +20,29 @@ export async function GET() {
   // category's first shard discoverable instead of turning the whole sitemap
   // into a 500 response.
   const counts: Array<{ category: CatalogCategory; count: number }> = [];
+  let countFailed = false;
 
   for (const category of CATEGORIES) {
     try {
       counts.push({ category, count: await countCatalogSitemap(category) });
     } catch (error) {
-      console.error('[sitemap] Could not count catalog category; serving first shard as fallback', {
+      countFailed = true;
+      console.error('[sitemap] Could not count catalog category; refusing to publish an incomplete sitemap index', {
         category,
         error: error instanceof Error ? error.message : String(error),
       });
-      counts.push({ category, count: 1 });
     }
+  }
+
+  if (countFailed) {
+    return new NextResponse('Sitemap temporarily unavailable. Please retry shortly.', {
+      status: 503,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Retry-After': '300',
+      },
+    });
   }
 
   const entries = [
