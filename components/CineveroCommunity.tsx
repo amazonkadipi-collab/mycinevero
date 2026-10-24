@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MessageCircle, Star, ThumbsDown, ThumbsUp, Flag, Eye, Send, ShieldCheck, Sparkles } from 'lucide-react';
 
 type Props = { tmdbId: number; mediaType: 'movie' | 'tv'; title: string };
@@ -13,7 +13,7 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
   const [rating, setRating] = useState(0); const [hoverRating, setHoverRating] = useState(0); const [recommend, setRecommend] = useState(false); const [watched, setWatched] = useState(false);
   const [name, setName] = useState(''); const [comment, setComment] = useState(''); const [spoiler, setSpoiler] = useState(false); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     const response = await fetch(`/api/community?type=${mediaType}&tmdbId=${tmdbId}`, { cache: 'no-store' });
     if (response.ok) {
       const next = await response.json() as Community;
@@ -22,8 +22,10 @@ export default function CineveroCommunity({ tmdbId, mediaType, title }: Props) {
       setRecommend(next.mine?.recommend ?? false);
       setWatched(next.mine?.watched ?? false);
     }
-  }
-  useEffect(() => { load(); }, [tmdbId, mediaType]);
+  }, [mediaType, tmdbId]);
+  // This effect starts async API synchronization; state changes occur after the response resolves.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
 
   async function post(body: any) {
     setBusy(true); setMessage('');
