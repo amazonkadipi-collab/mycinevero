@@ -11,7 +11,7 @@ type Analytics = { ok: boolean; error?: string; range?: number; source?: string;
 
 const nav = [
   ["#overview", "Overview", BarChart3], ["#movies", "Movies", Film], ["#series", "Series", Tv], ["#anime", "Anime", WandSparkles],
-  ["#traffic", "Traffic Sources", Globe2], ["#pages", "Top Pages", Search], ["/admin/seo", "Keyword Research", Search], ["#indexing", "Indexing", ListFilter], ["#ping", "Ping Center", Radio],
+  ["#traffic", "Traffic Sources", Globe2], ["#pages", "Top Pages", Search], ["/admin/seo", "Keyword Research", Search], ["/admin/ads", "Advertising Settings", ExternalLink], ["#indexing", "Indexing", ListFilter], ["#ping", "Ping Center", Radio],
 ] as const;
 function fmt(n: number) { return new Intl.NumberFormat("en-US", { notation: n > 9999 ? "compact" : "standard", maximumFractionDigits: 1 }).format(n || 0); }
 function pageName(path: string) { const p = path.split("/").filter(Boolean); return p.length ? decodeURIComponent(p[p.length - 1]).replace(/[-_]+/g, " ") : "Homepage"; }
