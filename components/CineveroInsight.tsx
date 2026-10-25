@@ -41,7 +41,7 @@ export default function CineveroInsight({ title, genres, runtime, overview, type
           </p>
           {overviewText ? (
             <p>
-              The story overview points toward the title's central premise, while the genre combination gives additional context about the tone and type of storytelling to expect. If that premise matches what you are looking for tonight, the title is worth exploring further through its trailer, cast, and related recommendations.
+              The story overview points toward the title&apos;s central premise, while the genre combination gives additional context about the tone and type of storytelling to expect. If that premise matches what you are looking for tonight, the title is worth exploring further through its trailer, cast, and related recommendations.
             </p>
           ) : null}
           <p>{runtimeAdvice}</p>

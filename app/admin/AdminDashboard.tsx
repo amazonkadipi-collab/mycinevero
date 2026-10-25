@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BarChart3, Film, Globe2, ListFilter, Menu, Radio, RefreshCw, Search, Send, Tv, WandSparkles, X } from "lucide-react";
 
 const SITE_URL = "https://cinevero.vercel.app";
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
   const [urls, setUrls] = useState(`${SITE_URL}/\n${SITE_URL}/discover\n${SITE_URL}/movie\n${SITE_URL}/series\n${SITE_URL}/anime\n${SITE_URL}/genres`);
   const [ping, setPing] = useState<PingState>({ busy: false, message: "" });
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/admin/analytics?range=${range}`, { cache: "no-store" });
@@ -68,9 +68,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [range]);
 
-  useEffect(() => { load(); }, [range]);
+  // This effect starts async analytics I/O; state updates happen when the request settles.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
 
   const filteredPages = useMemo(() => {
     const pages = analytics?.topPages || [];
