@@ -9,7 +9,7 @@ const authFailures = new Map<string, { count: number; resetAt: number }>();
 
 function getClientKey(request: NextRequest) {
   const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+  // Vercel appends the connecting client address to this header; use the last entry\n  // rather than a client-supplied first entry. This remains a best-effort local limiter.\n  return forwarded?.split(",").map(value => value.trim()).filter(Boolean).at(-1) || request.headers.get("x-real-ip") || "unknown";
 }
 
 function isRateLimited(request: NextRequest) {
