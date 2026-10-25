@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { countCatalogSitemap, type CatalogCategory } from '@/lib/catalog-registry';
+import { countCatalogEpisodeSitemap, countCatalogSitemap, type CatalogCategory } from '@/lib/catalog-registry';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
 const CATEGORIES: CatalogCategory[] = ['movies', 'series', 'anime'];
@@ -20,6 +20,7 @@ export async function GET() {
   // category's first shard discoverable instead of turning the whole sitemap
   // into a 500 response.
   const counts: Array<{ category: CatalogCategory; count: number }> = [];
+  let episodeCount = 0;
   let countFailed = false;
 
   for (const category of CATEGORIES) {
@@ -32,6 +33,13 @@ export async function GET() {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  try {
+    episodeCount = await countCatalogEpisodeSitemap();
+  } catch (error) {
+    countFailed = true;
+    console.error('[sitemap] Could not count episode sitemap rows', error instanceof Error ? error.message : String(error));
   }
 
   if (countFailed) {
@@ -55,6 +63,9 @@ export async function GET() {
         `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/${category}/${part}.xml`)}</loc></sitemap>`,
       );
     }),
+    ...Array.from({ length: Math.max(1, Math.ceil(episodeCount / 1000)) }, (_, part) =>
+      `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/episodes/${part}.xml`)}</loc></sitemap>`,
+    ),
   ];
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
