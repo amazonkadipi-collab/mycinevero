@@ -7,9 +7,11 @@ const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const COOKIE_NAME = "cinevero_admin_session";
 const authFailures = new Map<string, { count: number; resetAt: number }>();
 
-function getClientKey(request: NextRequest) {
+function getClientKey(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
-  // Vercel appends the connecting client address to this header; use the last entry\n  // rather than a client-supplied first entry. This remains a best-effort local limiter.\n  return forwarded?.split(",").map(value => value.trim()).filter(Boolean).at(-1) || request.headers.get("x-real-ip") || "unknown";
+  // Vercel appends the connecting client address to this header; use the last entry
+  // rather than a client-supplied first entry. This remains a best-effort local limiter.
+  return forwarded?.split(",").map(value => value.trim()).filter(Boolean).at(-1) || request.headers.get("x-real-ip") || "unknown";
 }
 
 function isRateLimited(request: NextRequest) {
