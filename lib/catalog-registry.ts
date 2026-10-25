@@ -309,6 +309,46 @@ export async function markCatalogEnrichmentError(row: CatalogRow, error: unknown
   return { state: 'error' as const };
 }
 
+export type CatalogArchiveRow = {
+  tmdb_id: number;
+  media_type: TmdbMediaType;
+  slug: string;
+  title: string;
+  poster_path: string | null;
+  release_date: string | null;
+  first_air_date: string | null;
+  vote_average: number | null;
+};
+
+export async function getCatalogArchivePage(
+  category: 'movies' | 'series',
+  requestedPage: number,
+  pageSize = 20,
+) {
+  const mediaType: TmdbMediaType = category === 'movies' ? 'movie' : 'tv';
+  const page = Math.max(1, Math.floor(requestedPage));
+  const safePageSize = Math.max(1, Math.min(48, Math.floor(pageSize)));
+  const offset = (page - 1) * safePageSize;
+  const params = new URLSearchParams({
+    select: 'tmdb_id,media_type,slug,title,poster_path,release_date,first_air_date,vote_average',
+    media_type: `eq.${mediaType}`,
+    is_anime: 'eq.false',
+    adult: 'eq.false',
+    order: 'popularity.desc.nullslast,title.asc',
+    offset: String(offset),
+    limit: String(safePageSize),
+  });
+  const { response, data } = await supabaseRequest<CatalogArchiveRow[]>(`titles?${params.toString()}`, {
+    headers: { Prefer: 'count=exact' },
+  });
+  return {
+    results: data || [],
+    totalResults: parseContentRange(response.headers.get('content-range')),
+    page,
+    pageSize: safePageSize,
+  };
+}
+
 function categoryFilters(category: CatalogCategory) {
   if (category === 'movies') return { mediaType: 'movie' as const, anime: false };
   if (category === 'series') return { mediaType: 'tv' as const, anime: false };
