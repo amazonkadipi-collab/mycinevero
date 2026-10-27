@@ -16,9 +16,7 @@ function xml(value: string) {
 export async function GET() {
   // Query categories sequentially to avoid three simultaneous catalog-count
   // queries exhausting the database statement timeout during sitemap refresh.
-  // If a count temporarily fails, still return a valid index and keep that
-  // category's first shard discoverable instead of turning the whole sitemap
-  // into a 500 response.
+  // If any count fails, return 503 rather than publishing a partial sitemap index.
   const counts: Array<{ category: CatalogCategory; count: number }> = [];
   let episodeCount = 0;
   let countFailed = false;
@@ -56,8 +54,7 @@ export async function GET() {
   const entries = [
     `  <sitemap><loc>${xml(`${SITE_URL}/sitemap-static.xml`)}</loc></sitemap>`,
     ...counts.flatMap(({ category, count }) => {
-      // Always advertise part 0, including when a category is currently empty
-      // or its estimated count could not be read.
+      // Always advertise part 0, including when a category is currently empty.
       const parts = Math.max(1, Math.ceil(count / 1000));
       return Array.from({ length: parts }, (_, part) =>
         `  <sitemap><loc>${xml(`${SITE_URL}/sitemap/${category}/${part}.xml`)}</loc></sitemap>`,
