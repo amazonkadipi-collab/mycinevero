@@ -3,7 +3,7 @@ import './globals.css';
 import LegalFooter from '@/components/LegalFooter';
 import SiteHeader from '@/components/SiteHeader';
 import VercelAnalyticsScript from '@/components/VercelAnalyticsScript';
-import AdSenseUnit from '@/components/AdSenseUnit';
+import AdSenseLoader from '@/components/AdSenseLoader';
 
 const GOOGLE_SITE_VERIFICATION = 'WkXRsZNaG77qk0yXebhvc_3VAHqFVP7NsvdVhtFSO5A';
 const BING_SITE_VERIFICATION = '84783D6C29D7BA1FE3D5503CF8ABF55D';
@@ -35,17 +35,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta name="google-adsense-account" content={ADSENSE_ACCOUNT} />
-        <script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}`}
-          crossOrigin="anonymous"
-        />
       </head>
       <body suppressHydrationWarning>
         <VercelAnalyticsScript />
         <SiteHeader />
         {children}
-        <AdSenseUnit />
+        <AdSenseLoader />
         <LegalFooter />
       </body>
     </html>

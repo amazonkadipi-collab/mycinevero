@@ -1,18 +1,24 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Star, SlidersHorizontal } from 'lucide-react';
-import { slugify, tmdbDiscover, tmdbImage } from '@/lib/tmdb';
+import { getCatalogArchivePage } from '@/lib/catalog-registry';
+import { tmdbImage } from '@/lib/tmdb';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cinevero.vercel.app';
+const PAGE_SIZE = 20;
 export const dynamic = 'force-dynamic';
+
+function safePage(value?: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 1 ? Math.min(Math.floor(parsed), 10000) : 1;
+}
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
   const { page: pageParam } = await searchParams;
-  const p = Number(pageParam);
-  const page = Number.isFinite(p) && p > 1 ? Math.min(Math.floor(p), 500) : 1;
+  const page = safePage(pageParam);
   return {
     title: page > 1 ? `Movies – Page ${page}` : 'Movies',
-    description: 'Browse movies and discover titles on Cinevero.',
+    description: 'Browse Cinevero’s movie catalogue, with release dates, ratings and poster details.',
     alternates: { canonical: page > 1 ? `${SITE_URL}/movie?page=${page}` : `${SITE_URL}/movie` },
     robots: { index: page === 1, follow: true },
   };
@@ -20,10 +26,20 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
 export default async function MoviesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { page: pageParam } = await searchParams;
-  const requested = Number(pageParam);
-  const page = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 500) : 1;
-  const data = await tmdbDiscover('movie', page).catch(() => ({ results: [], total_pages: 0, total_results: 0 }));
-  const totalPages = Math.min(data.total_pages || 0, 500);
+  const page = safePage(pageParam);
+  let data: Awaited<ReturnType<typeof getCatalogArchivePage>> = {
+    results: [], totalResults: 0, page, pageSize: PAGE_SIZE,
+  };
+  let archiveError = false;
+
+  try {
+    data = await getCatalogArchivePage('movies', page, PAGE_SIZE);
+  } catch (error) {
+    archiveError = true;
+    console.error('[movie-archive] Failed to load catalog page', error instanceof Error ? error.message : String(error));
+  }
+
+  const totalPages = Math.ceil(data.totalResults / PAGE_SIZE);
 
   return (
     <main className="min-h-screen bg-white text-zinc-900">
@@ -32,27 +48,33 @@ export default async function MoviesPage({ searchParams }: { searchParams: Promi
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-600">Cinevero catalogue</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Movies</h1>
-            <p className="mt-2 text-zinc-500">Browse popular films and discover what is worth exploring.</p>
+            <p className="mt-2 text-zinc-500">Browse movies available in the Cinevero catalogue.</p>
           </div>
-          <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">{data.total_results.toLocaleString()} movies</span>
+          <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">
+            {archiveError ? 'Catalogue unavailable' : `${data.totalResults.toLocaleString()} movies`}
+          </span>
         </div>
         <div className="mt-7 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
           <SlidersHorizontal size={16} className="text-zinc-500" aria-hidden="true" />
           <span className="text-xs font-semibold text-zinc-600">Sort: Popularity</span>
           <Link href="/series" className="ml-auto rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold hover:border-red-400 hover:text-red-600">Browse series</Link>
         </div>
-        {data.results.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 px-6 py-14 text-center text-sm text-zinc-500">No movies are available right now. Please try again.</div>
+        {archiveError ? (
+          <div role="status" className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-14 text-center text-sm text-amber-900">
+            The movie catalogue is temporarily unavailable. Please try again shortly.
+          </div>
+        ) : data.results.length === 0 ? (
+          <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 px-6 py-14 text-center text-sm text-zinc-500">No movies are available in the catalogue yet.</div>
         ) : (
           <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">
-            {data.results.map((item: any) => {
+            {data.results.map((item) => {
               const year = (item.release_date || '').slice(0, 4);
               const rating = typeof item.vote_average === 'number' && item.vote_average > 0 ? item.vote_average.toFixed(1) : 'N/A';
               return (
-                <Link key={item.id} href={`/movie/${slugify(item.title || 'untitled')}-${item.id}`} className="group min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+                <Link key={item.tmdb_id} href={`/movie/${item.slug}`} className="group min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
                   <article>
                     <div className="aspect-[2/3] overflow-hidden rounded-xl bg-zinc-100">
-                      {item.poster_path ? <img src={tmdbImage(item.poster_path, 'w342')} alt={`${item.title || 'Movie'} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-400">No poster</div>}
+                      {item.poster_path ? <img src={tmdbImage(item.poster_path, 'w342')} alt={`${item.title} poster`} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-400">No poster</div>}
                     </div>
                     <div className="mt-2">
                       <div className="flex items-center gap-2 text-[11px] font-semibold"><span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-600">Movie</span><span className="text-zinc-500">{year || '—'}</span></div>
@@ -65,7 +87,13 @@ export default async function MoviesPage({ searchParams }: { searchParams: Promi
             })}
           </div>
         )}
-        {totalPages > 1 && <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Movies pagination"><Link href={page > 1 ? `/movie?page=${page - 1}` : '/movie'} aria-disabled={page <= 1} className={`rounded-lg border px-4 py-2 text-sm font-medium ${page <= 1 ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}>Previous</Link><span className="px-3 text-sm text-zinc-500">Page {page} of {totalPages}</span><Link href={page < totalPages ? `/movie?page=${page + 1}` : `/movie?page=${totalPages}`} aria-disabled={page >= totalPages} className={`rounded-lg border px-4 py-2 text-sm font-medium ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}>Next</Link></nav>}
+        {!archiveError && totalPages > 1 && (
+          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Movies pagination">
+            <Link href={page > 1 ? `/movie?page=${page - 1}` : '/movie'} aria-disabled={page <= 1} className={`rounded-lg border px-4 py-2 text-sm font-medium ${page <= 1 ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}>Previous</Link>
+            <span className="px-3 text-sm text-zinc-500">Page {page} of {totalPages}</span>
+            <Link href={page < totalPages ? `/movie?page=${page + 1}` : `/movie?page=${totalPages}`} aria-disabled={page >= totalPages} className={`rounded-lg border px-4 py-2 text-sm font-medium ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:border-red-500 hover:text-red-600'}`}>Next</Link>
+          </nav>
+        )}
       </div>
     </main>
   );
