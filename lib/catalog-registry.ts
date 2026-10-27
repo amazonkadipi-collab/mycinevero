@@ -143,6 +143,8 @@ export async function getCatalogTitle(mediaType: TmdbMediaType, tmdbId: number) 
     select: catalogSelect(),
     tmdb_id: `eq.${tmdbId}`,
     media_type: `eq.${mediaType}`,
+    quality_state: 'eq.ready',
+    indexable: 'eq.true',
     limit: '1',
   });
 
