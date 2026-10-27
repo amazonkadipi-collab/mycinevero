@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 type Settings = { adsense: boolean; display300x250: boolean; adsterraNativeBanner: boolean };
-const NATIVE_SRC = 'https://pl31325870.profitableratecpmnetwork.com/03019123fc56ad60d24677c8faf7c4a1/invoke.js';
+const NATIVE_SRC = 'https://bancadeltempoidea.org/21/03019123fc56ad60d24677c8faf7c4a1';
 const NATIVE_CONTAINER_ID = 'container-03019123fc56ad60d24677c8faf7c4a1';
 
 export default function AdSenseUnit() {
