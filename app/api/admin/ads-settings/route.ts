@@ -29,7 +29,7 @@ async function readSettings(): Promise<AdsSettings> {
   return {
     adsense: value.adsense === true,
     display300x250: value.display300x250 === true,
-    inPagePush: value.inPagePush === true,
+    adsterraNativeBanner: value.adsterraNativeBanner === true,
   };
 }
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     !body ||
     typeof body.adsense !== "boolean" ||
     typeof body.display300x250 !== "boolean" ||
-    typeof body.inPagePush !== "boolean"
+    typeof body.adsterraNativeBanner !== "boolean"
   ) {
     return NextResponse.json({ error: "All ad settings must be boolean values" }, { status: 400 });
   }
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   const settings: AdsSettings = {
     adsense: body.adsense,
     display300x250: body.display300x250,
-    inPagePush: body.inPagePush,
+    adsterraNativeBanner: body.adsterraNativeBanner,
   };
 
   try {
