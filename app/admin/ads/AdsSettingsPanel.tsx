@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type Settings = { adsense: boolean; display300x250: boolean; inPagePush: boolean };
-const initial: Settings = { adsense: true, display300x250: true, inPagePush: false };
+type Settings = { adsense: boolean; display300x250: boolean; adsterraNativeBanner: boolean };
+const initial: Settings = { adsense: true, display300x250: true, adsterraNativeBanner: true };
 
 export default function AdsSettingsPanel() {
   const [settings, setSettings] = useState<Settings>(initial);
@@ -39,7 +39,7 @@ export default function AdsSettingsPanel() {
   const options: { key: keyof Settings; title: string; description: string }[] = [
     { key: "adsense", title: "Google AdSense", description: "Allow the AdSense loader and AdSense display units." },
     { key: "display300x250", title: "300 × 250 display units", description: "Show display ad placements on supported movie and series detail pages." },
-    { key: "inPagePush", title: "Adsterra In-Page Push", description: "Allow the site-wide Adsterra script. This format may behave differently across browsers and devices." },
+    { key: "adsterraNativeBanner", title: "Adsterra Native Banner", description: "Show the existing Native Banner on the homepage between Continue watching and Trending now." },
   ];
 
   return <main className="min-h-screen bg-[#08080f] px-4 py-10 text-white sm:px-8">
