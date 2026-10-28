@@ -27,7 +27,7 @@ function authorized(request: Request) {
 
 function parseBatch(value: string | undefined, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 20)) : fallback;
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 10)) : fallback;
 }
 
 function pad(value: number) {
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
   const deadline = Date.now() + 25_000;
-  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 10);
+  const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 5);
   // The historical shard set is stable; only reconcile it monthly instead of
   // writing hundreds of duplicate shard candidates on every daily run.
   if (new Date().getUTCDate() === 1) await ensureMaximumYearCoverage();
@@ -191,7 +191,8 @@ export async function GET(request: Request) {
         const index = cursor++;
         if (index >= batchShards.length) return;
         const shard = batchShards[index];
-        await lockSyncShard(shard.id);
+        const acquired = await lockSyncShard(shard.id);
+        if (!acquired) continue;
         const page = shard.next_page;
         try {
           const data = await tmdbDiscoverPage(shard.media_type, page, shard.filters);
@@ -222,7 +223,7 @@ export async function GET(request: Request) {
         }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(2, batchShards.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(1, batchShards.length) }, worker));
   }
 
   // Process one bounded batch per invocation. Never drain the entire backlog in

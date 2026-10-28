@@ -19,7 +19,7 @@ function authorized(request: Request) {
 
 function parseBatch(value: string | undefined, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 20)) : fallback;
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(Math.floor(parsed), 10)) : fallback;
 }
 
 async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>) {
@@ -41,7 +41,7 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
-  const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 10);
+  const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 5);
   const deadline = Date.now() + 25_000;
   let requested = 0;
   const runId = await startSyncRun('tmdb_catalog_enrichment', 0);
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     const titles = await getPendingCatalogTitles(batch);
     requested += titles.length;
 
-    await mapWithConcurrency(titles, 2, async row => {
+    await mapWithConcurrency(titles, 1, async row => {
       try {
         const detail = await tmdbDetails(row.media_type, row.tmdb_id);
         const result = await updateCatalogAfterEnrichment(row, detail);

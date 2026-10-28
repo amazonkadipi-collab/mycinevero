@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       .slice(0, 24);
 
     // Selective enrichment: only the best basic-metadata candidates get expensive details.
-    const enriched = (await Promise.all(pool.slice(0, 12).map(async item => {
+    const enriched = (await Promise.all(pool.slice(0, 6).map(async item => {
       try { return await tmdbDetails(item.media_type!, item.id); }
       catch { return item; }
     }))).map((item, i) => ({ ...pool[i], ...item, media_type: pool[i].media_type }));
