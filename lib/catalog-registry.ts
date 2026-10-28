@@ -457,9 +457,11 @@ function parseContentRange(value: string | null) {
 }
 
 export async function getSyncShards(limit: number) {
+  const now = new Date().toISOString();
   const params = new URLSearchParams({
     select: 'id,shard_key,media_type,shard_kind,filters,next_page,completed,priority,pages_fetched,items_seen,last_run_at,last_error,locked_until',
     completed: 'eq.false',
+    or: `(locked_until.is.null,locked_until.lt.${now})`,
     order: 'priority.desc,last_run_at.asc.nullslast,next_page.asc',
     limit: String(Math.max(1, Math.min(limit, 100))),
   });
@@ -480,19 +482,24 @@ export async function getSyncShards(limit: number) {
     locked_until: string | null;
   }>>(`catalog_sync_shards?${params.toString()}`);
 
-  return (data || []).filter(
-    row => !row.locked_until || new Date(row.locked_until).getTime() < Date.now(),
-  );
+  return data || [];
 }
 
 export async function lockSyncShard(id: string) {
+  const now = new Date().toISOString();
   const lockedUntil = new Date(Date.now() + 5 * 60_000).toISOString();
-  await supabaseRequest(`catalog_sync_shards?id=eq.${encodeURIComponent(id)}&completed=eq.false`, {
+  const params = new URLSearchParams({
+    id: `eq.${id}`,
+    completed: 'eq.false',
+    or: `(locked_until.is.null,locked_until.lt.${now})`,
+    select: 'id',
+  });
+  const { data } = await supabaseRequest<Array<{ id: string }>>(`catalog_sync_shards?${params.toString()}`, {
     method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
+    headers: { Prefer: 'return=representation' },
     body: JSON.stringify({ locked_until: lockedUntil }),
   });
-  return lockedUntil;
+  return Boolean(data?.length);
 }
 
 export async function updateSyncShard(id: string, patch: Record<string, unknown>) {
