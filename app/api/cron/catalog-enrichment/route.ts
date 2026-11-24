@@ -42,6 +42,7 @@ export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
   const batch = parseBatch(process.env.CATALOG_ENRICH_BATCH, 5);
+  const startedAt = Date.now();
   const deadline = Date.now() + 25_000;
   let requested = 0;
   const runId = await startSyncRun('tmdb_catalog_enrichment', 0);
@@ -75,6 +76,17 @@ export async function GET(request: Request) {
     synced_count: ready,
     error: errors ? `${errors} title(s) failed enrichment; they were scheduled for retry` : null,
   });
+
+  console.info(JSON.stringify({
+    event: 'cinevero.catalog_enrichment.completed',
+    batch,
+    requested,
+    enriched: ready,
+    indexable,
+    removed,
+    errors,
+    elapsedMs: Date.now() - startedAt,
+  }));
 
   return NextResponse.json({
     ok: true,
