@@ -145,6 +145,7 @@ async function fanOutIfNeeded(
 export async function GET(request: Request) {
   if (!authorized(request)) return new NextResponse('Unauthorized', { status: 401 });
 
+  const startedAt = Date.now();
   const deadline = Date.now() + 25_000;
   const batch = parseBatch(process.env.CATALOG_DISCOVERY_BATCH, 5);
   // The historical shard set is stable; only reconcile it monthly instead of
@@ -235,6 +236,17 @@ export async function GET(request: Request) {
     synced_count: discovered,
     error: failed ? `${failed} shard(s) failed` : null,
   });
+
+  console.info(JSON.stringify({
+    event: 'cinevero.catalog_discovery.completed',
+    batch,
+    selectedShards: shards.length,
+    pages,
+    discovered,
+    failed,
+    fanOut,
+    elapsedMs: Date.now() - startedAt,
+  }));
 
   return NextResponse.json({
     ok: true,
